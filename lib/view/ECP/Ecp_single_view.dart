@@ -15,14 +15,15 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
     final provider =
         Provider.of<CheckinPermissionProvider>(context, listen: false);
     provider.loadSharedPrefs();
+
     final String employee = ecpItem['employee_name'] ?? 'N/A';
     final String name = ecpItem['name'] ?? 'N/A';
-    final date = formatDate(ecpItem['date']);
+    final String date = formatDate(ecpItem['date'] ?? 'N/A');
     final String logType = ecpItem['log_type'] ?? 'N/A';
     final String arrivalTime = ecpItem['arrival_time'] ?? 'N/A';
     final String leavingTime = ecpItem['leaving_time'] ?? 'N/A';
     final String reason = ecpItem['reason'] ?? 'N/A';
-    final String isReportsToUser = ecpItem['reports_to_user'];
+    final String? isReportsToUser = ecpItem['reports_to_user'];
     final String status = ecpItem['workflow_state'] ?? 'N/A';
     final String owner = ecpItem['owner'] ?? 'N/A';
 
@@ -79,13 +80,9 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
             _buildTextField(reason, fieldPadding, maxLines: 3),
             SizedBox(height: MediaQuery.of(context).size.height * 0.02),
             if (isReportsToUser == provider.logmail)
-              Center(
-                child: _buildStatusDropdown(context),
-              )
+              Center(child: _buildStatusDropdown(context))
             else
-              Center(
-                child: _buildStatusButton(context),
-              ),
+              Center(child: _buildStatusButton(context)),
           ],
         ),
       ),
@@ -143,23 +140,17 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
 
   Widget _buildStatusDropdown(BuildContext context) {
     final provider = Provider.of<CheckinPermissionProvider>(context);
-
-    final statusProvider = context.watch<CheckinPermissionProvider>();
-    final String ecpstatus = ecpItem['workflow_state'] ?? 'N/A';
     final String ecpId = ecpItem['name'] ?? 'N/A';
-
-    final String currentStatus = ecpstatus;
-    final List<String> statuses = ['Open', 'Pending,' 'Approved', 'Rejected'];
+    final String currentStatus = ecpItem['workflow_state'] ?? 'N/A';
+    final List<String> statuses = ['Open', 'Pending', 'Approved', 'Rejected'];
 
     return DropdownButton<String>(
       value: currentStatus,
-      onTap: () {
-        provider.updateEcpstatus(
-            ecpApplicationId: ecpId, status: provider.status, context: context);
-      },
       onChanged: (newStatus) {
         if (newStatus != null) {
           context.read<CheckinPermissionProvider>().setStatus(newStatus);
+          provider.updateEcpstatus(
+              ecpApplicationId: ecpId, status: newStatus, context: context);
         }
       },
       items: statuses.map((status) {

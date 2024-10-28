@@ -37,13 +37,16 @@ class _EcpeditviewState extends State<Ecpeditview> {
   @override
   void initState() {
     super.initState();
-    _dateController = TextEditingController(text: widget.date);
+    // Ensure the values are not null or empty, fallback to defaults
+    _dateController = TextEditingController(text: widget.date.isNotEmpty ? widget.date : '');
     _timeController = TextEditingController(
-      text: widget.logtype == 'IN' ? widget.arrivalTime : widget.leavingTime,
+      text: (widget.logtype == 'IN' && widget.arrivalTime.isNotEmpty)
+          ? widget.arrivalTime
+          : (widget.leavingTime.isNotEmpty ? widget.leavingTime : ''),
     );
-    _reasonController = TextEditingController(text: widget.reason);
-    _logType = widget.logtype;
-    _id = widget.ecpid;
+    _reasonController = TextEditingController(text: widget.reason.isNotEmpty ? widget.reason : '');
+    _logType = (widget.logtype.isNotEmpty) ? widget.logtype : 'IN'; // Default to 'IN'
+    _id = (widget.ecpid.isNotEmpty) ? widget.ecpid : ''; // Fallback to empty string
   }
 
   Future<void> _pickDate(
@@ -83,7 +86,7 @@ class _EcpeditviewState extends State<Ecpeditview> {
       final parsedTime = DateFormat.jm().parse(controller.text);
       initialTime = TimeOfDay.fromDateTime(parsedTime);
     } catch (e) {
-      initialTime = TimeOfDay.now();
+      initialTime = TimeOfDay.now(); // Default to current time if parse fails
     }
 
     final TimeOfDay? picked = await showTimePicker(
@@ -108,7 +111,7 @@ class _EcpeditviewState extends State<Ecpeditview> {
     if (picked != null) {
       setState(() {
         final time =
-            DateFormat.Hms().format(DateTimeField.convertTimeOfDay(picked));
+            DateFormat.jm().format(DateTimeField.convertTimeOfDay(picked)); // Ensure time format
         controller.text = time;
       });
     }
@@ -183,10 +186,12 @@ class _EcpeditviewState extends State<Ecpeditview> {
                   }).toList(),
                   onChanged: (String? newValue) {
                     setState(() {
-                      _logType = newValue!;
-                      _timeController.text = _logType == 'IN'
-                          ? widget.arrivalTime
-                          : widget.leavingTime;
+                      if (newValue != null) {
+                        _logType = newValue;
+                        _timeController.text = _logType == 'IN'
+                            ? (widget.arrivalTime.isNotEmpty ? widget.arrivalTime : '')
+                            : (widget.leavingTime.isNotEmpty ? widget.leavingTime : '');
+                      }
                     });
                   },
                 ),
@@ -235,7 +240,7 @@ class _EcpeditviewState extends State<Ecpeditview> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 15),
-                Center(
+                 Center(
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -272,22 +277,31 @@ class _EcpeditviewState extends State<Ecpeditview> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return custom_text(text: title, fontWeight: FontWeight.bold, fontSize: 16);
+    return custom_text(
+      text: title,
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: Colors.black,
+    );
   }
 
-  Widget _buildInfoContainer(String text) {
+  Widget _buildInfoContainer(String id) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.grey[200],
         borderRadius: BorderRadius.circular(12),
       ),
-      child: custom_text(text: text, fontSize: 15),
+      child: Text(
+        id,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
-
 class DateTimeField {
   static DateTime convertTimeOfDay(TimeOfDay timeOfDay) {
     final now = DateTime.now();
@@ -299,4 +313,4 @@ class DateTimeField {
       timeOfDay.minute,
     );
   }
-}
+}     

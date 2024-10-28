@@ -33,6 +33,7 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     final controller = Provider.of<Profilecontroller>(context);
+    
 
     return Scaffold(
       appBar: AppBar(

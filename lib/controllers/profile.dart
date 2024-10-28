@@ -9,7 +9,7 @@ import 'package:efeone_mobile/view/login_view.dart';
 class Profilecontroller extends ChangeNotifier {
   String _fullname = '';
   String _empid = '';
-  final String _email = '';
+  String _email = '';
   String _imgurl = "";
   String _dob = '';
   String _designation = '';
@@ -37,42 +37,49 @@ class Profilecontroller extends ChangeNotifier {
       final response = await http.get(
         Uri.parse(url),
         headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+          'Content-Type': 'application/json',
           "cookie": token ?? '',
         },
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseBody = json.decode(response.body);
+        print(response.body);
         List<dynamic> data = responseBody['data'];
 
-        final name = data[0]['employee_name'];
-        final id = data[0]['name'];
-        // final empemail = data[0]['personal_email'];
-        final empdob = data[0]['date_of_birth'];
-        final empdsgntion = data[0]['designation'];
-        final doj = data[0]['date_of_joining'];
+        if (data.isNotEmpty) {
+          // Safely extract each field with default value if null
+          final name = data[0]['employee_name'] ?? 'No name found';
+          final id = data[0]['name'] ?? 'N/A';
+          final empemail = data[0]['personal_email'] ?? 'N/A';
+          final empdob = data[0]['date_of_birth'] ?? 'N/A';
+          final empdsgntion = data[0]['designation'] ?? 'N/A';
+          final doj = data[0]['date_of_joining'] ?? 'N/A';
 
-        String formattedDob = formatDate(empdob);
-        String formattedDoj = formatDate(doj);
+          // Format dates if not null
+          String formattedDob = empdob != 'N/A' ? formatDate(empdob) : 'N/A';
+          String formattedDoj = doj != 'N/A' ? formatDate(doj) : 'N/A';
 
-        // Update shared preferences
-        await prefs.setString('user_name', name);
-        await prefs.setString('id', id);
-        // await prefs.setString('email', empemail);
-        await prefs.setString('dob', empdob);
-        await prefs.setString('designation', empdsgntion);
-        await prefs.setString('dateofjoing', doj);
+          // Update shared preferences
+          await prefs.setString('user_name', name);
+          await prefs.setString('id', id);
+          await prefs.setString('email', empemail);
+          await prefs.setString('dob', empdob);
+          await prefs.setString('designation', empdsgntion);
+          await prefs.setString('dateofjoing', doj);
 
-        // Update local variables
-        _fullname = name;
-        _empid = id;
-        // _email = empemail;
-        _dob = formattedDob;
-        _designation = empdsgntion;
-        _dateofjoining = formattedDoj;
+          // Update local variables
+          _fullname = name;
+          _empid = id;
+          _email = empemail;
+          _dob = formattedDob;
+          _designation = empdsgntion;
+          _dateofjoining = formattedDoj;
 
-        notifyListeners();
+          notifyListeners();
+        } else {
+          print('No data found for the given user ID.');
+        }
       } else {
         print(
             'Failed to load profile details. Status code: ${response.statusCode}');

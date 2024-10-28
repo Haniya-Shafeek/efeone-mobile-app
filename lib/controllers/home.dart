@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:efeone_mobile/utilities/config.dart';
 import 'package:efeone_mobile/view/login_view.dart';
 import 'package:flutter/material.dart';
@@ -127,7 +129,7 @@ class HomepageController extends ChangeNotifier {
   }
 
   // Toggle check-in status
-  Future<void> toggleCheckInStatus() async {
+  Future<void> toggleCheckInStatus( double latitude,double logiude) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _isCheckedIn = !_isCheckedIn;
@@ -147,58 +149,60 @@ class HomepageController extends ChangeNotifier {
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       String status = _isCheckedIn ? 'IN' : 'OUT';
 
-      await postStatus(status, currentTime);
+      await postStatus(status, currentTime,logiude,logiude);
     } catch (e) {
       print('Error toggling check-in status: $e');
     }
   }
 
   // Post check-in status to server
-  Future<void> postStatus(String status, String currentTime) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('cookie');
-    final employeeid = prefs.getString('employeeid');
+  Future<void> postStatus(String status, String currentTime, double latitude, double longitude) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('cookie');
+  final employeeId = prefs.getString('employeeid');
 
-    if (token == null || employeeid == null) {
-      print('Token or employee ID is missing');
-      return;
-    }
-
-    final url = Uri.parse('${Config.baseUrl}/api/resource/Employee Checkin');
-
-    final Map<String, dynamic> requestData = {
-      'employee': employeeid,
-      'log_type': status,
-      'time': currentTime,
-    };
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'cookie': token,
-        },
-        body: json.encode(requestData),
-      );
-
-      if (response.statusCode == 200) {
-        print('Status posted successfully: $status at $currentTime');
-
-        // Update local state and SharedPreferences
-        _logtime = currentTime;
-        _logtype = status;
-        await prefs.setString('log_time', _logtime);
-        await prefs.setString('log_type', _logtype);
-
-        notifyListeners();
-      } else {
-        print('Failed to post status. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error posting status: $e');
-    }
+  if (token == null || employeeId == null) {
+    print('Token or employee ID is missing');
+    return;
   }
 
+  final url = Uri.parse('${Config.baseUrl}/api/resource/Employee Checkin');
+
+  final Map<String, dynamic> requestData = {
+    'employee': employeeId,
+    'log_type': status,
+    'time': currentTime,
+    'latitude': latitude,
+    'longitude': longitude,
+  };
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'cookie': token,
+      },
+      body: json.encode(requestData),
+    );
+
+    if (response.statusCode == 200) {
+      print('Status posted successfully: $status at $currentTime');
+
+      // Update local state and SharedPreferences
+      _logtime = currentTime;
+      _logtype = status;
+      await prefs.setString('log_time', _logtime);
+      await prefs.setString('log_type', _logtype);
+
+      notifyListeners();
+    } else {
+      print('Failed to post status. Status code: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error posting status: $e');
+  }
+}
   // Fetch last login type from server
   Future<void> fetchLastLoginType() async {
     final prefs = await SharedPreferences.getInstance();
