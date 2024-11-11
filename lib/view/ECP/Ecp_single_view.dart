@@ -24,8 +24,8 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
     final String leavingTime = ecpItem['leaving_time'] ?? 'N/A';
     final String reason = ecpItem['reason'] ?? 'N/A';
     final String? isReportsToUser = ecpItem['reports_to_user'];
-    final String status = ecpItem['workflow_state'] ?? 'N/A';
-    final String owner = ecpItem['owner'] ?? 'N/A';
+    // final String status = ecpItem['workflow_state'] ?? 'N/A';
+    // final String owner = ecpItem['owner'] ?? 'N/A';
 
     final double textSize = MediaQuery.of(context).size.width * 0.04;
     final double fieldPadding = MediaQuery.of(context).size.width * 0.03;

@@ -8,13 +8,28 @@ import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class TimesheetListviewScreen extends StatelessWidget {
+class TimesheetListviewScreen extends StatefulWidget {
   const TimesheetListviewScreen({super.key});
+
+  @override
+  _TimesheetListviewScreenState createState() =>
+      _TimesheetListviewScreenState();
+}
+
+class _TimesheetListviewScreenState extends State<TimesheetListviewScreen> {
+  late Future<void> _fetchTimesheetDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = Provider.of<TimesheetController>(context, listen: false);
+    _fetchTimesheetDetails = provider.fetchTimesheetDetails();
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimesheetController>(context);
-    // provider.fetchTimesheetDetails();
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       floatingActionButton: FloatingActionButton(
@@ -54,8 +69,7 @@ class TimesheetListviewScreen extends StatelessWidget {
               vertical: MediaQuery.of(context).size.height * 0.01,
             ),
             child: const custom_text(
-              text: 'Timesheet Overview', // Your title here
-
+              text: 'Timesheet Overview',
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: primaryColor,
@@ -63,7 +77,7 @@ class TimesheetListviewScreen extends StatelessWidget {
           ),
           Expanded(
             child: FutureBuilder(
-              future: provider.fetchTimesheetDetails(),
+              future: _fetchTimesheetDetails,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -133,14 +147,26 @@ class TimesheetListviewScreen extends StatelessWidget {
                                 // Timesheet Name
                                 Expanded(
                                   flex: 2,
-                                  child: custom_text(
-                                    text: tsItem['name'] ?? 'N/A',
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      custom_text(
+                                        text: tsItem['name'] ?? 'N/A',
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      custom_text(
+                                        text: tsItem['employee_name'] ?? 'N/A',
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.normal,
+                                        fontSize: 12,
+                                      ),
+                                    ],
                                   ),
                                 ),
-
                                 // Posting Date
                                 Expanded(
                                   flex: 1,
@@ -189,7 +215,7 @@ class TimesheetListviewScreen extends StatelessWidget {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               TimesheetEditViewScreen(
-                                            timesheetId: tsItem['name'],
+                                            timesheetId: tsItem['name']??"",
                                             review: tsItem[
                                                     'end_of_the_day_review'] ??
                                                 '',

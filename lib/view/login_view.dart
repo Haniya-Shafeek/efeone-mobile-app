@@ -125,12 +125,14 @@ class Loginscreen extends StatelessWidget {
                     // Login Button
                     ElevatedButton(
                       onPressed: () {
-                        loginController.connectioncheck(context);
-                         loginController.postLoginDetails(
+                        if (_formKey.currentState!.validate()) {
+                          loginController.connectioncheck(context);
+                          loginController.postLoginDetails(
                             emailController.text,
                             passwordController.text,
                             context,
                           );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 6, 79, 138),

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:ffi';
+import 'package:efeone_mobile/view/Time%20Sheet/timesheet_edit.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_list_view.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheetRowAdd_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
@@ -23,6 +25,7 @@ class TimesheetController extends ChangeNotifier {
   String? selectedCategory;
   String? selectedProject;
   bool isCompleted = false;
+  bool isDataFetched = false;
 
   String? get empid => _empid;
   String? get empname => _empname;
@@ -58,6 +61,9 @@ class TimesheetController extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
       // final String employeeId = prefs.getString('employeeid') ?? '';
+      final url = Uri.parse(
+          '${Config.baseUrl}/api/resource/Timesheet?fields=["*"]&order_by=creation%20desc');
+      print(url);
       final response = await http.get(
         Uri.parse(
             '${Config.baseUrl}/api/resource/Timesheet?fields=["*"]&order_by=creation%20desc'),
@@ -71,6 +77,8 @@ class TimesheetController extends ChangeNotifier {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         if (jsonData.containsKey('data') && jsonData['data'] is List) {
           _timesheet = List<Map<String, dynamic>>.from(jsonData['data']);
+          isDataFetched = true;
+          notifyListeners();
         } else {
           print('Invalid response format');
         }
@@ -87,7 +95,9 @@ class TimesheetController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
-
+      final url =
+          Uri.parse('${Config.baseUrl}/api/resource/Timesheet/$timesheetId');
+      print(url);
       final response = await http.get(
         Uri.parse('${Config.baseUrl}/api/resource/Timesheet/$timesheetId'),
         headers: <String, String>{
@@ -120,11 +130,12 @@ class TimesheetController extends ChangeNotifier {
   }
 
   // Method to fetch timesheet data
-  Future<void> fetchTimesheetData(String timesheetId) async {
+  Future<Map<String, dynamic>> fetchTimesheetData(String timesheetId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("cookie");
 
     final url = '${Config.baseUrl}/api/resource/Timesheet/$timesheetId';
+    print(url);
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -136,12 +147,14 @@ class TimesheetController extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setTimesheetData(data['data']);
+        // Assuming you want to return the 'data' field from the response
+        return data['data']; // Return the 'data' object directly
       } else {
-        throw Exception('Failed to load timesheet data ${response.body}');
+        throw Exception('Failed to load timesheet data: ${response.body}');
       }
     } catch (error) {
       print('Error fetching timesheet data: $error');
+      rethrow; // Rethrow the error to handle it in FutureBuilder
     }
   }
 
@@ -166,7 +179,8 @@ class TimesheetController extends ChangeNotifier {
         "tomorrows_plan": tmrwplan,
         "time_logs": timeLogs
       };
-
+      final url = Uri.parse('${Config.baseUrl}/api/resource/Timesheet');
+      print(url);
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/api/resource/Timesheet'),
         headers: {
@@ -228,7 +242,9 @@ class TimesheetController extends ChangeNotifier {
       final updateData = {
         "docstatus": 1 // Setting as Submitted
       };
-
+      final url =
+          Uri.parse('${Config.baseUrl}/api/resource/Timesheet/$timesheetName');
+      print(url);
       final response = await http.put(
         Uri.parse('${Config.baseUrl}/api/resource/Timesheet/$timesheetName'),
         headers: {
@@ -282,34 +298,24 @@ class TimesheetController extends ChangeNotifier {
   }
 
 //Method To update the timesheet
-  Future<void> updateTimesheet(
-      {required List<Map<String, dynamic>> timeLogs,
-      required String timesheetName,
-      required String review,
-      required String plan,
-      required BuildContext context}) async {
+  Future<bool> updateTimesheet(String timesheetId, Map<String, dynamic> data,
+      BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
-
-      final updateData = {
-        "time_logs": timeLogs,
-        'end_of_the_day_review': review,
-        "tomorrows_plan": plan,
-        // Setting as Submitted
-      };
-
+      final url =
+          "${Config.baseUrl}/api/resource/Timesheet/$timesheetId"; // Replace with actual endpoint
       final response = await http.put(
-        Uri.parse('${Config.baseUrl}/api/resource/Timesheet/$timesheetName'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           "cookie": token ?? '',
         },
-        body: jsonEncode(updateData),
+        body: json.encode(data),
       );
 
       if (response.statusCode == 200) {
-        // Success handling
+        // Optionally, parse the response data if needed
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Container(
             padding: const EdgeInsets.all(16),
@@ -319,7 +325,7 @@ class TimesheetController extends ChangeNotifier {
             ),
             child: const Center(
               child: custom_text(
-                text: 'Updated Succesfully',
+                text: 'Timesheet updated successfully',
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -331,17 +337,60 @@ class TimesheetController extends ChangeNotifier {
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ));
+
+        Navigator.pop(context, true);
+        notifyListeners();
+        return true;
       } else {
-        // Error handling
-        print('Failed to submit timesheet: ${response.body}');
+        // Log or handle errors
+        print("Failed to update timesheet: ${response.body}");
+        return false;
       }
     } catch (error) {
-      print('An error occurred: $error');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $error'),
-        backgroundColor: Colors.red,
-      ));
+      print("Error updating timesheet: $error");
+      return false;
     }
+  }
+
+  // Show error dialog
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Error',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   //Method to delete timesheet
@@ -350,6 +399,7 @@ class TimesheetController extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
       final url = '${Config.baseUrl}/api/resource/Timesheet/$timesheetId';
+      print(url);
       final response = await http.delete(
         Uri.parse(url),
         headers: <String, String>{
@@ -374,7 +424,9 @@ class TimesheetController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
-      final url = '${Config.baseUrl}/api/resource/Project';
+      final url =
+          '${Config.baseUrl}/api/resource/Project?limit_page_length=1000';
+      print(url);
       final response = await http.get(
         Uri.parse(url),
         headers: <String, String>{
@@ -401,6 +453,7 @@ class TimesheetController extends ChangeNotifier {
       final token = prefs.getString("cookie");
       final url =
           '${Config.baseUrl}/api/resource/Activity%20Type?limit_page_length=1000';
+      print(url);
       final response = await http.get(
         Uri.parse(url),
         headers: <String, String>{
@@ -533,21 +586,21 @@ class TimesheetController extends ChangeNotifier {
   }
 
 //To show error dialogue
-  void _showErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+  // void _showErrorDialog(BuildContext context, String message) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Error'),
+  //       content: Text(message),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.of(context).pop(),
+  //           child: const Text('OK'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   //Method to format posting date
   String _postingDate() {
@@ -564,14 +617,21 @@ class TimesheetController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Method to delete a time log entry based on the index
+  void deleteTimeLog(int index) {
+    timeLogs?.removeWhere((log) => log['index'] == index);
+    notifyListeners();
+  }
+
   // Method to clear time logs
   void clearTimeLogs() {
     timeLogs?.clear();
     notifyListeners();
   }
 
-  // //Method To add empty row
+  // Method To add empty row
   void addEmptyLog(BuildContext context) {
+    print('row add called');
     timeLogs!.add({
       'index': timeLogs!.length + 1,
       'activity_type': '',
@@ -580,7 +640,7 @@ class TimesheetController extends ChangeNotifier {
       'project': '',
       "Edit": IconButton(
         onPressed: () {
-          Navigator.pushReplacement(
+          Navigator.push(
             context,
             MaterialPageRoute(
                 builder: (context) => const TimesheetRowaddview(
@@ -618,9 +678,18 @@ class TimesheetController extends ChangeNotifier {
     notifyListeners();
   }
 
-    void updateTimeLog(int index, dynamic updatedLog) {
+  void updateTimeLog(int index, dynamic updatedLog) {
     timeLogs![index] = updatedLog;
     notifyListeners(); // Notify the UI to rebuild
   }
-  
+  void addEmptyLogtimelog(BuildContext context) {
+    timeLogs!.add({
+      'activity_type': '',
+      'from_time': '',
+      'to_time': '',
+      'hours': 0,
+      'project': '',
+    });
+    notifyListeners(); // This will notify the UI to rebuild
+  }
 }

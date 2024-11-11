@@ -3,6 +3,7 @@ import 'package:efeone_mobile/utilities/helpers.dart';
 import 'package:efeone_mobile/view/Time Sheet/timesheet_list_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:efeone_mobile/controllers/timesheet.dart';
 
@@ -17,8 +18,6 @@ class TimesheetDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimesheetController>(context);
-    provider.fetchTimesheetData(tsname);
-
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -30,7 +29,7 @@ class TimesheetDetailScreen extends StatelessWidget {
         actions: [
           if (provider.timesheetData != null &&
               provider.timesheetData!['status'] ==
-                  'Draft') // Check if status is 'draft'
+                  'Draft') // Check if status is 'Draft'
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
@@ -39,20 +38,33 @@ class TimesheetDetailScreen extends StatelessWidget {
             ),
         ],
       ),
-      body: Consumer<TimesheetController>(
-        builder: (context, provider, child) {
-          final data = provider.timesheetData;
-
-          if (data == null) {
-            return const Center(child: CircularProgressIndicator());
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: provider
+            .fetchTimesheetData(tsname), // Call the method returning a Future
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+           return const Center(child: CircularProgressIndicator(color: primaryColor,));
+          } else if (snapshot.hasError) {
+            print('Error: ${snapshot.error}'); // Log the error
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data == null) {
+            return const Center(child: Text('No data found.'));
           }
 
+          // Safely get the fetched data
+          final data = snapshot.data!;
+          if (data.isEmpty) {
+            return const Center(child: Text('No data found.'));
+          }
+
+          // Extract necessary fields from the data
           final timeLogs = data['time_logs'] as List<dynamic>;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // Build cards using the data extracted from the response
                 _buildTimesheetOverviewCard(data),
                 _buildTimeLogsCard(timeLogs, screenWidth, context),
                 _buildReviewOrPlanCard(
@@ -114,24 +126,29 @@ class TimesheetDetailScreen extends StatelessWidget {
               color: primaryColor,
             ),
             const SizedBox(height: 8),
-            Table(
-              columnWidths: {
-                0: FlexColumnWidth(screenWidth < 600 ? 2 : 3),
-                1: FlexColumnWidth(screenWidth < 600 ? 1.5 : 2),
-                2: FlexColumnWidth(screenWidth < 600 ? 1.5 : 2),
-                3: FlexColumnWidth(screenWidth < 600 ? 1 : 1.5),
-              },
-              border: TableBorder.all(
-                color: Colors.blueGrey[200]!,
-                style: BorderStyle.solid,
-                width: 1,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal, // Enable horizontal scrolling
+              child: Table(
+                columnWidths: const {
+                  0: FixedColumnWidth(200), // Set fixed or flexible widths
+                  1: FixedColumnWidth(150),
+                  2: FixedColumnWidth(150),
+                  3: FixedColumnWidth(100),
+                  4: FixedColumnWidth(100),
+                  5: FixedColumnWidth(80),
+                },
+                border: TableBorder.all(
+                  color: Colors.blueGrey[200]!,
+                  style: BorderStyle.solid,
+                  width: 1,
+                ),
+                children: [
+                  _buildTableHeader(),
+                  ...timeLogs.map((log) {
+                    return _buildTableRow(log, context);
+                  }),
+                ],
               ),
-              children: [
-                _buildTableHeader(),
-                ...timeLogs.map((log) {
-                  return _buildTableRow(log, context);
-                }),
-              ],
             ),
           ],
         ),
@@ -208,6 +225,8 @@ class TimesheetDetailScreen extends StatelessWidget {
     return TableRow(
       children: [
         _buildTableHeaderCell('Description'),
+        _buildTableHeaderCell('Project'),
+        _buildTableHeaderCell('Activity Type'),
         _buildTableHeaderCell('From Time'),
         _buildTableHeaderCell('To Time'),
         _buildTableHeaderCell('Hr'),
@@ -234,6 +253,8 @@ class TimesheetDetailScreen extends StatelessWidget {
     return TableRow(
       children: [
         _buildTableCell(Text(log['description'] ?? 'No Description')),
+        _buildTableCell(Text(log['project'] ?? 'No Project')),
+        _buildTableCell(Text(log['activity_type'] ?? 'No Activity Type')),
         _buildTableCell(Text(_formatTime(log['from_time']))),
         _buildTableCell(Text(_formatTime(log['to_time']))),
         _buildTableCell(Text('${roundHours(log['hours'])} hr')),
@@ -251,7 +272,8 @@ class TimesheetDetailScreen extends StatelessWidget {
   String _formatTime(String? dateTime) {
     if (dateTime == null) return 'N/A';
     final time = DateTime.parse(dateTime);
-    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+    return DateFormat('hh:mm:ss a')
+        .format(time); // 12-hour format with seconds and AM/PM
   }
 
   void _showDeleteConfirmationDialog(

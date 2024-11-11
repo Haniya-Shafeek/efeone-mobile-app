@@ -370,7 +370,7 @@ class LeaveRequestProvider extends ChangeNotifier {
       final token = prefs.getString("cookie");
       // final String employeeId = prefs.getString('employeeid') ?? '';
       final url = Uri.parse(
-          '${Config.baseUrl}/api/resource/Leave%20Application?fields=["employee_name","name","employee","leave_type","from_date","to_date","half_day","half_day_date","total_leave_days","description","leave_approver","follow_via_email","posting_date","status"]&order_by=posting_date%20desc');
+          '${Config.baseUrl}/api/resource/Leave%20Application?fields=["*"]&order_by=posting_date%20desc');
 
       final response = await http.get(
         url,

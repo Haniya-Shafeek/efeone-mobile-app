@@ -1,17 +1,21 @@
 import 'package:efeone_mobile/controllers/timesheet.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheetRowAdd_view.dart';
+import 'package:efeone_mobile/widgets/modal_bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class TimesheetFormscreen extends StatelessWidget {
-  final TextEditingController _endOfDayReviewController =
-      TextEditingController();
-  final TextEditingController _tomorrowPlanController = TextEditingController();
-
   TimesheetFormscreen({
     super.key,
   });
+
+  final TextEditingController _endOfDayReviewController =
+      TextEditingController();
+
+  final TextEditingController _tomorrowPlanController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +105,11 @@ class TimesheetFormscreen extends StatelessWidget {
                 : ElevatedButton(
                     onPressed: () {
                       provider.toggleSaved();
-                      final postingDate = DateTime.now().toIso8601String();
+                      final postingDate = _dateController.text.isNotEmpty
+                          ? DateFormat('yyyy-MM-dd')
+                              .parse(_dateController.text)
+                              .toIso8601String()
+                          : DateTime.now().toIso8601String();
                       final formattedNotes = timeLogs!
                           .map((log) =>
                               "${log['description']} (${log['project']})")
@@ -151,15 +159,47 @@ class TimesheetFormscreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildSectionTitle("Date"),
                     const SizedBox(height: 8),
-                    _buildInfoBox(provider.postingDate.toString(),
-                        fontSize: 17),
+                    GestureDetector(
+                      onTap: () => _selectDate(context),
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: _dateController,
+                          decoration: InputDecoration(
+                            hintText: 'Select Date',
+                            filled: true,
+                            fillColor: Colors.grey[200],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     _buildSectionTitle("Timesheet Logs"),
                     const SizedBox(height: 10),
                     _buildTimeLogsTable(context),
                     ElevatedButton(
                       onPressed: () {
-                        provider.addEmptyLog(context);
+                        // provider.addEmptyLog(context);
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (context) {
+                            return Container(
+                              // Set a fixed height or adjust as necessary
+                              constraints: BoxConstraints(
+                                maxHeight: MediaQuery.of(context).size.height *
+                                    0.8, // 80% of the screen height
+                              ),
+                              child: TimesheetRowBottomSheet(
+                                timeLog: const {},
+                                selectedDate: _dateController.text,
+                              ), // Pass your data here
+                            );
+                          },
+                        );
                       },
                       child: const Text(
                         'Add Row',
@@ -234,39 +274,59 @@ class TimesheetFormscreen extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-              color: const Color.fromRGBO(238, 238, 238, 1), width: 2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: DataTable(
-          columnSpacing: 12,
-          headingRowColor: MaterialStateProperty.resolveWith(
-            (states) => const Color.fromRGBO(238, 238, 238, 1),
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: const Color.fromRGBO(238, 238, 238, 1), width: 2),
+            borderRadius: BorderRadius.circular(12),
           ),
-          columns: const [
-            DataColumn(
-                label:
-                    Expanded(child: Text('No', textAlign: TextAlign.center))),
-            DataColumn(
-                label: Expanded(
-                    child: Text('Activity Type', textAlign: TextAlign.center))),
-            DataColumn(
-                label: Expanded(
-                    child: Text('From Time', textAlign: TextAlign.center))),
-            DataColumn(
-                label: Expanded(
-                    child: Text('Hours', textAlign: TextAlign.center))),
-            DataColumn(
-                label: Expanded(
-                    child: Text('Project', textAlign: TextAlign.center))),
-            DataColumn(label: Icon(Icons.settings))
-          ],
-          rows: timeLogs == null || timeLogs.isEmpty
-              ? _buildEmptyRow(context)
-              : _buildTimeLogRows(context),
-        ),
-      ),
+          child: DataTable(
+            columnSpacing:
+                40, // Adjust this value as needed for space between columns
+            headingRowColor: MaterialStateProperty.resolveWith(
+              (states) => const Color.fromRGBO(238, 238, 238, 1),
+            ),
+            columns: const [
+              DataColumn(
+                label: SizedBox(
+                  width: 40, // Set minimum width for each header cell
+                  child: Text('No', textAlign: TextAlign.center),
+                ),
+              ),
+              DataColumn(
+                label: SizedBox(
+                  width: 100,
+                  child: Text('Activity Type', textAlign: TextAlign.center),
+                ),
+              ),
+              DataColumn(
+                label: SizedBox(
+                  width: 80,
+                  child: Text('From Time', textAlign: TextAlign.center),
+                ),
+              ),
+              DataColumn(
+                label: SizedBox(
+                  width: 60,
+                  child: Text('Hours', textAlign: TextAlign.center),
+                ),
+              ),
+              DataColumn(
+                label: SizedBox(
+                  width: 100,
+                  child: Text('Project', textAlign: TextAlign.center),
+                ),
+              ),
+              DataColumn(
+                label: SizedBox(
+                  width: 50,
+                  child: Icon(Icons.settings),
+                ),
+              ),
+            ],
+            rows: timeLogs == null || timeLogs.isEmpty
+                ? _buildEmptyRow(context)
+                : _buildTimeLogRows(context),
+          )),
     );
   }
 
@@ -284,19 +344,42 @@ class TimesheetFormscreen extends StatelessWidget {
           DataCell(
             IconButton(
               onPressed: () async {
-                // Navigate to the TimesheetRowaddview and wait for the updated time log
-                final updatedLog = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TimesheetRowaddview(timeLog: timeLog),
-                  ),
-                );
+                // // Navigate to the TimesheetRowaddview and wait for the updated time log
+                // final updatedLog = await Navigator.push(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => TimesheetRowaddview(timeLog: timeLog),
+                //   ),
+                // );
 
-                // Check if an updated log is returned
-                if (updatedLog != null) {
-                  provider.updateTimeLog(timeLog['index'],
-                      updatedLog); // Call the provider to update the log
-                }
+                // // Check if an updated log is returned
+                // if (updatedLog != null) {
+                //   provider.updateTimeLog(timeLog['index'],
+                //       updatedLog); // Call the provider to update the log
+                // }
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) {
+                    return Container(
+                      // Set a fixed height or adjust as necessary
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height *
+                            0.8, // 80% of the screen height
+                      ),
+                      child: TimesheetRowBottomSheet(
+                        timeLog: timeLog,
+                        selectedDate: _dateController.text,
+                      ), // Pass your data here
+                    );
+                  },
+                ).then((updatedLog) {
+                  // Check if an updated log is returned
+                  if (updatedLog != null) {
+                    provider.updateTimeLog(timeLog['index'],
+                        updatedLog); // Call the provider to update the log
+                  }
+                });
               },
               icon: const Icon(Icons.edit),
             ),
@@ -328,22 +411,52 @@ class TimesheetFormscreen extends StatelessWidget {
         const DataCell(Text('1')),
         const DataCell(Text('')),
         const DataCell(Text('')),
-        const DataCell(Text('0')),
+        const DataCell(Text('0.0')),
         const DataCell(Text('')),
         DataCell(
           IconButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TimesheetRowaddview(timeLog: {}),
-                ),
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (context) => const TimesheetRowaddview(timeLog: {}),
+              //   ),
+              // );
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) {
+                  return Container(
+                    // Set a fixed height or adjust as necessary
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height *
+                          0.8, // 80% of the screen height
+                    ),
+                    child: TimesheetRowBottomSheet(
+                      timeLog: const {},
+                      selectedDate: _dateController.text,
+                    ), // Pass your data here
+                  );
+                },
               );
             },
-            icon: const Icon(Icons.edit, color: Colors.grey),
+            icon: const Icon(Icons.edit),
           ),
         ),
       ]),
     ];
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      String formattedDate = DateFormat('dd-MM-yyyy').format(picked);
+      _dateController.text = formattedDate; // Set the formatted date
+    }
   }
 }

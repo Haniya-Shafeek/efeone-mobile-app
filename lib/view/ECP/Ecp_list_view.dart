@@ -14,8 +14,6 @@ class CheckinPermissionListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CheckinPermissionProvider>(context);
-    provider.fetchCheckinPermissionDetails();
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
       floatingActionButton: FloatingActionButton(
@@ -57,7 +55,7 @@ class CheckinPermissionListScreen extends StatelessWidget {
             child: const custom_text(
               text: 'Ecp Overview', // Your title here
               fontSize: 18,
-               fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w600,
               color: primaryColor,
             ),
           ),
@@ -132,28 +130,28 @@ class CheckinPermissionListScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                // ECP Name
-                                if (ecpItem['reports_to_user'] ==
-                                    provider.logmail)
-                                  Expanded(
-                                    flex: 2,
-                                    child: custom_text(
-                                      text: ecpItem['employee_name'] ?? 'N/A',
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  )
-                                else
-                                  Expanded(
-                                    flex: 2,
-                                    child: custom_text(
-                                      text: ecpItem['name'] ?? 'N/A',
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      custom_text(
+                                        text: ecpItem['name'] ?? 'N/A',
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      custom_text(
+                                        text: ecpItem['employee_name'] ?? 'N/A',
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.normal,
+                                        fontSize: 12,
+                                      ),
+                                    ],
                                   ),
+                                ),
 
                                 // Posting Date
                                 Expanded(

@@ -1,6 +1,5 @@
 import 'package:efeone_mobile/controllers/timesheet.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
-import 'package:efeone_mobile/view/Time%20Sheet/timesheet_edit.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:efeone_mobile/widgets/customdropdown.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:provider/provider.dart';
 class TimesheetRowupdateview extends StatefulWidget {
   final Map<String, dynamic>? timeLog;
   final String timesheetId;
+
   const TimesheetRowupdateview(
       {super.key, this.timeLog, required this.timesheetId});
 
@@ -23,15 +23,16 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
   TimeOfDay? _selectedStartTime;
   TimeOfDay? _selectedEndTime;
   String? _selectedCategory;
+  int? _index;
   String? _selectedProject;
   bool _isCompleted = false;
 
   @override
   void initState() {
     super.initState();
-
     if (widget.timeLog != null) {
       final timeLog = widget.timeLog!;
+      _index = timeLog["idx"];
       _descriptionController.text = timeLog['description'] ?? '';
       _selectedDate = timeLog['from_time'] != null
           ? DateTime.tryParse(timeLog['from_time']) ?? DateTime.now()
@@ -45,128 +46,35 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
       _selectedProject = timeLog['project'] ?? '';
       _isCompleted = (timeLog['completed'] ?? 0) == 1;
     }
+    final provider = Provider.of<TimesheetController>(context, listen: false);
+    provider.fetchprojectType();
+    provider.fetchActivitytype();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimesheetController>(context);
-    provider.fetchprojectType();
-    provider.fetchActivitytype();
-
+    // print(widget.timesheetId);
+    // print(widget.timeLog!['idx']);
     final screenWidth = MediaQuery.of(context).size.width;
     final padding = screenWidth * 0.05;
 
     return Scaffold(
       appBar: AppBar(
         title: SizedBox(
-          width: screenWidth * 0.2, // Adjusted width
+          width: screenWidth * 0.2,
           child: Image.asset('assets/images/efeone Logo.png'),
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              if (_selectedDate != null &&
-                  _selectedStartTime != null &&
-                  _selectedEndTime != null &&
-                  _selectedCategory != null &&
-                  _selectedProject != null &&
-                  _descriptionController.text.isNotEmpty) {
-                if (_selectedStartTime == _selectedEndTime) {
-                  _showErrorDialog(
-                      'Start time and end time cannot be the same.');
-                  return;
-                }
-                final fromTime = DateTime(
-                  _selectedDate!.year,
-                  _selectedDate!.month,
-                  _selectedDate!.day,
-                  _selectedStartTime!.hour,
-                  _selectedStartTime!.minute,
-                );
-
-                final toTime = DateTime(
-                  _selectedDate!.year,
-                  _selectedDate!.month,
-                  _selectedDate!.day,
-                  _selectedEndTime!.hour,
-                  _selectedEndTime!.minute,
-                );
-
-                if (fromTime.isAfter(toTime)) {
-                  _showErrorDialog('Start time must be before end time.');
-                  return;
-                }
-                if (widget.timeLog != null) {
-                  final indexToRemove = provider.timeLogs!.indexWhere(
-                      (log) => log['index'] == widget.timeLog!['index']);
-                  if (indexToRemove != -1) {
-                    provider.timeLogs!.removeAt(indexToRemove);
-                  }
-                }
-
-                final duration = toTime.difference(fromTime);
-                final hours = duration.inHours;
-                final minutes = duration.inMinutes % 60;
-                final formattedDuration = '${hours}h ${minutes}m';
-                final description = _descriptionController.text;
-                final prjctname = _selectedProject!;
-
-                provider.addtimeLog({
-                  'index': (provider.timeLogs!.isNotEmpty
-                      ? provider.timeLogs!.last['index'] + 1
-                      : 1),
-                  "activity_type": _selectedCategory!,
-                  "from_time": fromTime.toIso8601String(),
-                  "to_time": toTime.toIso8601String(),
-                  "description": description,
-                  "completed": _isCompleted ? 1 : 0,
-                  "project": prjctname,
-                  "hours": formattedDuration
-                });
-                // final timelog = {
-                //   'index': (provider.timeLogs!.isNotEmpty
-                //       ? provider.timeLogs!.last['index'] + 1
-                //       : 1),
-                //   "activity_type": _selectedCategory!,
-                //   "from_time": fromTime.toIso8601String(),
-                //   "to_time": toTime.toIso8601String(),
-                //   "description": description,
-                //   "completed": _isCompleted ? 1 : 0,
-                //   "project": prjctname,
-                //   "hours": formattedDuration
-                // };
-                _descriptionController.clear();
-                _selectedDate = null;
-                _selectedStartTime = null;
-                _selectedEndTime = null;
-                _selectedCategory = null;
-                _selectedProject = null;
-                _isCompleted = false;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Time Log Added Successfully!')),
-                );
-                // provider.updateTimesheet(
-                //     timeLogs: [timelog],
-                //     context: context,
-                //     review: '',
-                //     plan: '',
-                //     timesheetName: widget.timesheetId);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TimesheetEditViewScreen(
-                        timesheetId: widget.timesheetId, review: '', plan: ''),
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please fill in all fields')),
-                );
-              }
+              saveTimesheet();
             },
             child: const custom_text(
-                text: 'Save', fontWeight: FontWeight.bold, color: primaryColor),
+              text: 'Save',
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+            ),
           ),
         ],
       ),
@@ -288,31 +196,25 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: _descriptionController,
+                  maxLines: 4,
                   decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey[200],
+                    hintText: 'Enter work description',
                     border: OutlineInputBorder(
-                      borderSide: BorderSide.none,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    hintText: 'Enter work description',
                   ),
-                  maxLines: 4,
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Checkbox(
-                      value: _isCompleted,
-                      onChanged: (value) {
-                        setState(() {
-                          _isCompleted = value ?? false;
-                        });
-                      },
-                    ),
-                    const custom_text(text: 'Completed'),
-                  ],
+                _buildSectionTitle('Mark as Completed'),
+                const SizedBox(height: 10),
+                Switch(
+                  value: _isCompleted,
+                  onChanged: (value) {
+                    setState(() {
+                      _isCompleted = value;
+                    });
+                  },
+                  activeColor: Colors.green,
                 ),
               ],
             ),
@@ -322,91 +224,126 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
     );
   }
 
+  // Method to show an error dialog
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: const custom_text(
-            text: 'Error',
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+      builder: (_) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: custom_text(
-              text: message,
-              color: Colors.black,
-              fontSize: 16,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const custom_text(
-                text: 'OK',
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15), // Rounded corners
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 
+  // Method to pick a date
   Future<void> _pickDate(BuildContext context) async {
-    final initialDate = _selectedDate ?? DateTime.now();
-    final pickedDate = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initialDate,
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
-    if (pickedDate != null && pickedDate != initialDate) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
-        _selectedDate = pickedDate;
+        _selectedDate = picked;
       });
     }
   }
 
+  // Method to pick a start time
   Future<void> _pickStartTime(BuildContext context) async {
-    final initialTime = _selectedStartTime ?? TimeOfDay.now();
-    final pickedTime = await showTimePicker(
+    final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: initialTime,
+      initialTime: _selectedStartTime ?? TimeOfDay.now(),
     );
-    if (pickedTime != null && pickedTime != initialTime) {
+    if (picked != null && picked != _selectedStartTime) {
       setState(() {
-        _selectedStartTime = pickedTime;
+        _selectedStartTime = picked;
       });
     }
   }
 
+  // Method to pick an end time
   Future<void> _pickEndTime(BuildContext context) async {
-    final initialTime = _selectedEndTime ?? TimeOfDay.now();
-    final pickedTime = await showTimePicker(
+    final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: initialTime,
+      initialTime: _selectedEndTime ?? TimeOfDay.now(),
     );
-    if (pickedTime != null && pickedTime != initialTime) {
+    if (picked != null && picked != _selectedEndTime) {
       setState(() {
-        _selectedEndTime = pickedTime;
+        _selectedEndTime = picked;
       });
     }
   }
 
+  // Helper method to build section titles
   Widget _buildSectionTitle(String title) {
     return custom_text(
       text: title,
-      fontSize: 18,
       fontWeight: FontWeight.bold,
-      color: Colors.black,
+      color: Colors.blueGrey[900],
+      fontSize: 16,
     );
+  }
+
+  void saveTimesheet() async {
+    final provider = Provider.of<TimesheetController>(context, listen: false);
+
+    if (_selectedDate == null ||
+        _selectedStartTime == null ||
+        _selectedEndTime == null ||
+        _selectedCategory == null ||
+        _selectedProject == null) {
+      _showErrorDialog("Please fill in all required fields.");
+      return;
+    }
+
+    final fromTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedStartTime!.hour,
+      _selectedStartTime!.minute,
+    );
+
+    final toTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedEndTime!.hour,
+      _selectedEndTime!.minute,
+    );
+    final updatedData = {
+      "time_logs": [
+        {
+         'idx':widget.timeLog!['idx'],
+          "name": widget.timeLog!["name"],
+          "activity_type": _selectedCategory,
+          "description": _descriptionController.text,
+          "from_time": fromTime.toIso8601String(),
+          "to_time": toTime.toIso8601String(),
+          "completed": _isCompleted ? 1 : 0,
+          "project": _selectedProject,
+        }
+      ]
+    };
+
+    // Debugging output to verify data
+    print('Updated Data: $updatedData');
+
+    bool success = await provider.updateTimesheet(
+        widget.timesheetId, updatedData, context);
+
+    if (success) {
+      Navigator.pop(context);
+    } else {
+      _showErrorDialog("Failed to save timesheet.");
+    }
   }
 }

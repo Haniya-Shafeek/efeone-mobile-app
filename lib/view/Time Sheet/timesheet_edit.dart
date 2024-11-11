@@ -7,15 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TimesheetEditViewScreen extends StatefulWidget {
-  final String timesheetId;
-  final String review;
-  final String plan; // Pass the timesheet ID from TimesheetListView
+  final String? timesheetId;
+  final String? review;
+  final String? plan;
 
   const TimesheetEditViewScreen(
-      {super.key,
-      required this.timesheetId,
-      required this.review,
-      required this.plan});
+      {super.key, this.timesheetId, this.review, this.plan});
 
   @override
   State<TimesheetEditViewScreen> createState() =>
@@ -23,29 +20,20 @@ class TimesheetEditViewScreen extends StatefulWidget {
 }
 
 class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
-  final TextEditingController endOfTheReviewController =
-      TextEditingController();
+  late TextEditingController endOfTheReviewController;
+  late TextEditingController tomorrowplanController;
 
-  final TextEditingController tomorrowplanController = TextEditingController();
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    endOfTheReviewController.text = widget.review;
-    tomorrowplanController.text = widget.plan;
+    endOfTheReviewController = TextEditingController(text: widget.review ?? '');
+    tomorrowplanController = TextEditingController(text: widget.plan ?? '');
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TimesheetController>(context);
+    final provider = Provider.of<TimesheetController>(context, listen: false);
 
-    // Fetch the details for the specific timesheet
-    provider.fetchSingleTimesheetDetails(widget.timesheetId);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    final timeLogs = provider.timeLogs;
-
-    // final tsid = timesheetId;
     return WillPopScope(
       onWillPop: () async {
         provider.resetSavedStatus();
@@ -54,33 +42,35 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: SizedBox(
-            width: screenWidth * 0.2, // Adjusted for responsiveness
+            width: MediaQuery.of(context).size.width * 0.2,
             child: Image.asset('assets/images/efeone Logo.png'),
           ),
           actions: [
             provider.isSaved
                 ? TextButton(
                     onPressed: () {
-                      provider.submitTimesheet(widget.timesheetId, context);
+                      provider.submitTimesheet(widget.timesheetId!, context);
                     },
-                    child: const Text('submit'))
+                    child: const Text('submit'),
+                  )
                 : TextButton(
                     onPressed: () {
-                      provider.updateTimesheet(
-                          timeLogs: timeLogs!,
-                          timesheetName: widget.timesheetId,
-                          review: endOfTheReviewController.text,
-                          plan: tomorrowplanController.text,
-                          context: context);
+                      provider.submitTimesheet(widget.timesheetId!, context);
                     },
-                    child: const custom_text(text: 'Save', color: primaryColor),
+                    child:
+                        const custom_text(text: 'Submit', color: primaryColor),
                   )
           ],
         ),
-        body: provider.timesheetDetail == null
-            ? const Center(
-                child: CircularProgressIndicator()) // Loading indicator
-            : SingleChildScrollView(
+        body: FutureBuilder<void>(
+          future: provider.fetchSingleTimesheetDetails(widget.timesheetId!),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(color: primaryColor,));
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else {
+              return SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -88,40 +78,46 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
                     children: [
                       _buildSectionTitle("Employee ID"),
                       const SizedBox(height: 8),
-                      _buildInfoBox(provider.timesheetDetail!['employee']),
+                      _buildInfoBox(
+                          provider.timesheetDetail?['employee'] ?? "N/A"),
                       const SizedBox(height: 16),
                       _buildSectionTitle("Employee Name"),
                       const SizedBox(height: 8),
-                      _buildInfoBox(provider.timesheetDetail!['employee_name']),
+                      _buildInfoBox(
+                          provider.timesheetDetail?['employee_name'] ?? "N/A"),
                       const SizedBox(height: 16),
                       _buildSectionTitle("Posting Date"),
                       const SizedBox(height: 8),
-                      _buildInfoBox(provider.timesheetDetail!['posting_date']),
+                      _buildInfoBox(
+                          provider.timesheetDetail?['posting_date'] ?? "N/A"),
                       const SizedBox(height: 16),
                       _buildSectionTitle("Time Log Details"),
                       const SizedBox(height: 8),
                       _buildTimeLogTable(
-                          provider.timesheetDetail!['time_logs'], context),
+                          provider.timesheetDetail?['time_logs'] ?? [],
+                          context),
                       ElevatedButton(
                         onPressed: () {
-                          provider.addEmptyLog(context);
+                          provider.addEmptyLogtimelog(context);
                         },
                         child: const custom_text(
                             text: 'Add Row', color: primaryColor),
                       ),
-                      const SizedBox(
-                        height: 8,
-                      ),
+                      const SizedBox(height: 20),
                       _buildSectionTitle("End Of The Review"),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       _buildTextField(endOfTheReviewController),
-                      _buildSectionTitle("Tomorrows Plan"),
-                      const SizedBox(height: 8),
-                      _buildTextField(tomorrowplanController)
+                      const SizedBox(height: 20),
+                      _buildSectionTitle("Tomorrow's Plan"),
+                      const SizedBox(height: 10),
+                      _buildTextField(tomorrowplanController),
                     ],
                   ),
                 ),
-              ),
+              );
+            }
+          },
+        ),
       ),
     );
   }
@@ -166,75 +162,66 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
     );
   }
 
-  Widget _buildTimeLogTable(List<dynamic> logs, BuildContext context) {
+  Widget _buildTimeLogTable(List<dynamic>? logs, BuildContext context) {
     final provider = Provider.of<TimesheetController>(context);
     return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-                color: const Color.fromRGBO(238, 238, 238, 1), width: 2),
-            borderRadius: BorderRadius.circular(12),
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+              color: const Color.fromRGBO(238, 238, 238, 1), width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: DataTable(
+          columnSpacing: 12,
+          headingRowColor: MaterialStateProperty.resolveWith(
+            (states) => const Color.fromRGBO(238, 238, 238, 1),
           ),
-          child: DataTable(
-            columnSpacing: 12,
-            headingRowColor: MaterialStateProperty.resolveWith(
-              (states) => const Color.fromRGBO(238, 238, 238, 1),
-            ),
-            columns: const [
-              DataColumn(label: Text('Activity')),
-              DataColumn(label: Text('From Time')),
-              DataColumn(label: Text('To Time')),
-              DataColumn(label: Text('Hours')),
-              DataColumn(label: Text('Project')),
-              DataColumn(label: Icon(Icons.settings)),
-            ],
-            rows: logs.map((log) {
-              return DataRow(
-                cells: [
-                  DataCell(Text(log['activity_type'].toString())),
-                  DataCell(Text(log['from_time'].toString())),
-                  DataCell(Text(log['to_time'].toString())),
-                  DataCell(Text(roundHours(log['hours']).toString())),
-                  DataCell(Text(log['project'].toString())),
-                  DataCell(
-                    IconButton(
-                      onPressed: () async {
-                        final updatedLog = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TimesheetRowupdateview(
-                              timeLog: log,
-                              timesheetId: widget.timesheetId,
+          columns: const [
+            DataColumn(label: Text('Activity')),
+            DataColumn(label: Text('From Time')),
+            DataColumn(label: Text('To Time')),
+            DataColumn(label: Text('Hours')),
+            DataColumn(label: Text('Project')),
+            DataColumn(label: Icon(Icons.settings)),
+          ],
+          rows: logs?.map((log) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text(log['activity_type']?.toString() ?? "N/A")),
+                    DataCell(Text(log['from_time']?.toString() ?? "N/A")),
+                    DataCell(Text(log['to_time']?.toString() ?? "N/A")),
+                    DataCell(Text(roundHours(log['hours'] ?? 0).toString())),
+                    DataCell(Text(log['project']?.toString() ?? "N/A")),
+                    DataCell(
+                      IconButton(
+                        onPressed: () async {
+                          final updatedLog = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TimesheetRowupdateview(
+                                timeLog: log,
+                                timesheetId: widget.timesheetId!,
+                              ),
                             ),
-                          ),
-                        );
-
-                        // Update the log if any changes were made
-                        if (updatedLog != null) {
-                          setState(() {
-                            int logIndex = logs.indexOf(log);
-                            logs[logIndex] =
-                                updatedLog; // Update the specific log in the list
-                          });
-
-                          // Update provider to save the changes
-                          provider.updateTimesheet(
-                            timeLogs: updatedLog,
-                            timesheetName: widget.timesheetId,
-                            review: endOfTheReviewController.text,
-                            plan: tomorrowplanController.text,
-                            context: context,
                           );
-                        }
-                      },
-                      icon: const Icon(Icons.edit),
+
+                          if (updatedLog != null) {
+                            setState(() {
+                              int logIndex = logs.indexOf(log);
+                              logs[logIndex] = updatedLog;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.edit),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ));
+                  ],
+                );
+              }).toList() ??
+              [],
+        ),
+      ),
+    );
   }
 }

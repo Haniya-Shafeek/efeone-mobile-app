@@ -1,3 +1,5 @@
 class Config {
-  static String baseUrl = 'https://jalebi.efeone.com/';
+  static String baseUrl = 'https://jalebi.efeone.com';
+  
 }
+

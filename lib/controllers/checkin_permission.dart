@@ -164,7 +164,6 @@ class CheckinPermissionProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
-
       final response = await http.get(
         Uri.parse(
             '${Config.baseUrl}/api/resource/Employee%20Checkin%20Permission?fields=["*"]&order_by=date%20desc'),

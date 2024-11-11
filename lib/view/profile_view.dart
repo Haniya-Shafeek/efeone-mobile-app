@@ -4,9 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   Future<Map<String, String>> _getProfileDetails() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String name = prefs.getString('user_name') ?? 'No name';
@@ -30,10 +35,17 @@ class ProfilePage extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    final controller = Provider.of<Profilecontroller>(context, listen: false);
+    controller.getempdetails();
+  }
+
+  @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     final controller = Provider.of<Profilecontroller>(context);
-    
 
     return Scaffold(
       appBar: AppBar(
@@ -63,7 +75,7 @@ class ProfilePage extends StatelessWidget {
               future: _getProfileDetails(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(color: primaryColor,));
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (snapshot.hasData) {

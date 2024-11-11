@@ -27,7 +27,6 @@ class Profilecontroller extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("cookie");
     final userId = prefs.getString("usr");
-    print("userid $userId");
     _imgurl = prefs.getString('img_url') ?? '';
 
     String url =

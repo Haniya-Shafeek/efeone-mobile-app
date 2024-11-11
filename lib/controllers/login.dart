@@ -87,52 +87,50 @@ class LoginController extends ChangeNotifier {
     }
   }
 
-  Future<void> getempid() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("cookie");
-    final userId = prefs.getString("usr");
+ Future<void> getempid() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString("cookie");
+  final userId = prefs.getString("usr");
 
-    String url =
-        '${Config.baseUrl}/api/resource/Employee?filters=[["user_id", "=", "$userId"]]&fields=["name", "image"]';
+  String url = '${Config.baseUrl}/api/resource/Employee?filters=[["user_id", "=", "$userId"]]&fields=["name", "image"]';
 
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-          "cookie": token ?? '',
-        },
-      );
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        "cookie": token ?? '',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseBody = json.decode(response.body);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseBody = json.decode(response.body);
 
-        if (responseBody.containsKey('data')) {
-          List<dynamic> data = responseBody['data'];
-          if (data.isNotEmpty) {
-            String employeeId = data[0]['name'];
-            String imgUrl = '';
-            if (data[0]['image'] != null) {
-              imgUrl = Config.baseUrl + data[0]['image'];
-            }
-
-            await prefs.setString('employeeid', employeeId);
-            await prefs.setString('img_url', imgUrl);
-
-            notifyListeners();
-          } else {
-            print('Name not found in the response data');
+      if (responseBody.containsKey('data')) {
+        List<dynamic> data = responseBody['data'];
+        if (data.isNotEmpty) {
+          String employeeId = data[0]['name'];
+          String imgUrl = '';
+          if (data[0]['image'] != null) {
+            imgUrl = Config.baseUrl + data[0]['image'];
           }
-        } else {
-          print('Data not found in the response body');
+
+          // Save image URL and employee ID locally to avoid refetching
+          await prefs.setString('employeeid', employeeId);
+          await prefs.setString('img_url', imgUrl);
+          notifyListeners();
         }
-      } else {
-        print('Request failed: ${response.statusCode}');
       }
-    } catch (e) {
-      print('Exception occurred: $e');
+    } else if (response.statusCode == 403 || response.statusCode == 401) {
+      print('Image access restricted. Skipping repeated requests.');
+      // Optional: Store a flag to indicate restricted access if needed
+    } else {
+      print('Request failed: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Exception occurred: $e');
   }
+}
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,6 +1,6 @@
 import 'package:efeone_mobile/controllers/timesheet.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
-import 'package:efeone_mobile/view/Time%20Sheet/timesheetForm_view.dart';
+import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:efeone_mobile/widgets/customdropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -42,14 +42,15 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
       _selectedProject = timeLog['project'] ?? '';
       _isCompleted = (timeLog['completed'] ?? 0) == 1;
     }
+    // Fetch project and activity types
+    final provider = Provider.of<TimesheetController>(context, listen: false);
+    if (provider.projects.isEmpty) provider.fetchprojectType();
+    if (provider.activitytype.isEmpty) provider.fetchActivitytype();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimesheetController>(context);
-    provider.fetchprojectType();
-    provider.fetchActivitytype();
-
     final screenWidth = MediaQuery.of(context).size.width;
     final padding = screenWidth * 0.05;
 
@@ -132,13 +133,14 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Time Log Added Successfully!')),
                 );
+                Navigator.pop(context);
 
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TimesheetFormscreen(),
-                  ),
-                );
+                // Navigator.pushReplacement(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => TimesheetFormscreen(),
+                //   ),
+                // );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Please fill in all fields')),
@@ -150,6 +152,10 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
               style:
                   TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _confirmDelete(provider),
           ),
         ],
       ),
@@ -353,6 +359,46 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
         );
       },
     );
+  }
+
+  void _confirmDelete(TimesheetController provider) {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Delete Time Log'),
+            content: const Text(
+                'Are you sure you want to delete this time log? This action cannot be undone.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const custom_text(
+                  text: "Cancel",
+                  color: Colors.grey,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Perform deletion and close dialog
+                  final indexToRemove = provider.timeLogs!.indexWhere(
+                      (log) => log['index'] == widget.timeLog!['index']);
+                  if (indexToRemove != -1) {
+                    provider.timeLogs!.removeAt(indexToRemove);
+                  }
+                  Navigator.of(context).pop(); // Close the dialog
+                  Navigator.of(context).pop(); // Return to previous screen
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Time Log Deleted')),
+                  );
+                },
+                child: const custom_text(
+                  text: "Delete",
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          );
+        });
   }
 
   Future<void> _pickDate(BuildContext context) async {

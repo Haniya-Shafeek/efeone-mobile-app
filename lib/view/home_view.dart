@@ -1,7 +1,8 @@
+import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/view/ECP/Ecp_list_view.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_list_view.dart';
 import 'package:efeone_mobile/view/leave%20application/leavelist_view.dart';
-import 'package:efeone_mobile/view/task_view.dart';
+import 'package:efeone_mobile/view/Task%20screens/task_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:efeone_mobile/controllers/home.dart';
@@ -12,9 +13,14 @@ import 'package:efeone_mobile/widgets/Home/notification._icon.dart';
 import 'package:efeone_mobile/widgets/Home/user_info.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 
-class Homepage extends StatelessWidget {
+class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
+  @override
+  State<Homepage> createState() => _HomepageState();
+}
+
+class _HomepageState extends State<Homepage> {
   Future<void> _fetchData(BuildContext context) async {
     final notificationController =
         Provider.of<Notificationcontroller>(context, listen: false);
@@ -27,16 +33,20 @@ class Homepage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    _fetchData(context); // Initialize data fetching
-    print(
-      "assets/images/todoicon.png",
-    );
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchData(context);
+    });
+  }
 
+  @override
+  Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-
-    return Scaffold(
+  
+   return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: Colors.grey[100],
@@ -101,7 +111,7 @@ class Homepage extends StatelessWidget {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return SizedBox(
                       height: screenHeight * 0.25,
-                      child: const Center(child: CircularProgressIndicator()));
+                      child: const Center(child: CircularProgressIndicator(color: primaryColor,)));
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else {

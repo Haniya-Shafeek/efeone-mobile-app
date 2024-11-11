@@ -1,5 +1,5 @@
 import 'package:efeone_mobile/controllers/home.dart';
-import 'package:efeone_mobile/view/task_view.dart';
+import 'package:efeone_mobile/view/Task%20screens/task_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:efeone_mobile/widgets/richtext.dart';
 import 'package:flutter/material.dart';
