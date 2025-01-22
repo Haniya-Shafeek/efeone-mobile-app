@@ -2,8 +2,7 @@ import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:efeone_mobile/controllers/leave_application.dart';
-import 'package:efeone_mobile/widgets/cust_textfield.dart';
+import 'package:efeone_mobile/controllers/leave.dart';
 
 class LeaveApplicationScreen extends StatelessWidget {
   const LeaveApplicationScreen({super.key});
@@ -21,10 +20,7 @@ class LeaveApplicationScreen extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: SizedBox(
-            width: 90,
-            child: Image.asset('assets/images/efeone Logo.png'),
-          ),
+          title: Image.asset('assets/images/efeone Logo.png', width: 90),
         ),
         body: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
@@ -32,11 +28,13 @@ class LeaveApplicationScreen extends StatelessWidget {
             future: controller.fetchLeaveDetails(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-               return const Center(child: CircularProgressIndicator(color: primaryColor,));
+                return const Center(
+                  child: CircularProgressIndicator(color: primaryColor),
+                );
               } else if (snapshot.hasError) {
                 return Center(
                   child: Text(
-                    'Error: ${snapshot.error}', // Show the actual error message
+                    'Error: ${snapshot.error}',
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
@@ -44,7 +42,7 @@ class LeaveApplicationScreen extends StatelessWidget {
               } else {
                 return SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: Consumer<LeaveRequestProvider>(
                       builder: (context, provider, child) {
                         return Form(
@@ -52,306 +50,37 @@ class LeaveApplicationScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const custom_text(
-                                  text: 'Employee id',
-                                  fontWeight: FontWeight.bold),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: custom_text(
-                                    text: provider.empid.toString(),
-                                    fontSize: 15),
-                              ),
-                              const SizedBox(height: 16),
-                              const custom_text(
-                                  text: 'Employee Name',
-                                  fontWeight: FontWeight.bold),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: custom_text(
-                                    text: provider.empname.toString(),
-                                    fontSize: 17),
-                              ),
-                              const SizedBox(height: 16),
-                              const custom_text(
-                                  text: "Leave Type",
-                                  fontWeight: FontWeight.bold),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: DropdownButtonFormField<String>(
-                                  value: provider.leaveType,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                  ),
-                                  items: controller.lwps!.map((String value) {
-                                    return DropdownMenuItem<String>(
-                                      value: value,
-                                      child: Text(value),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    provider.setLeaveType(value);
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "please select Log Type";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const custom_text(
-                                            text: "Start Date",
-                                            fontWeight: FontWeight.bold),
-                                        const SizedBox(height: 8),
-                                        GestureDetector(
-                                          onTap: () =>
-                                              provider.pickStartDate(context),
-                                          child: AbsorbPointer(
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16.0),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[200],
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: cust_textfield(
-                                                controller:
-                                                    TextEditingController(
-                                                  text: provider.startDate !=
-                                                          null
-                                                      ? "${provider.startDate!.day}/${provider.startDate!.month}/${provider.startDate!.year}"
-                                                      : 'DD / MM / YY',
-                                                ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.isEmpty ||
-                                                      value == 'DD / MM / YY') {
-                                                    return "Select Start Date";
-                                                  }
-                                                  return null;
-                                                },
-                                                text: '',
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const custom_text(
-                                            text: "End Date",
-                                            fontWeight: FontWeight.bold),
-                                        const SizedBox(height: 8),
-                                        GestureDetector(
-                                          onTap: () =>
-                                              provider.pickEndDate(context),
-                                          child: AbsorbPointer(
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16.0),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[200],
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: cust_textfield(
-                                                controller:
-                                                    TextEditingController(
-                                                  text: provider.endDate != null
-                                                      ? "${provider.endDate!.day}-${provider.endDate!.month}-${provider.endDate!.year}"
-                                                      : 'DD / MM / YY',
-                                                ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.isEmpty ||
-                                                      value == 'DD / MM / YY') {
-                                                    return "Select End Date";
-                                                  }
-                                                  return null;
-                                                },
-                                                text: '',
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                  custom_text(
+                                    text: 'Apply for Leave',
+                                    fontSize: 23,
+                                    color: primaryColor,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: provider.isHalfDay,
-                                    onChanged: (value) {
-                                      provider.setHalfDay(value!);
-                                    },
-                                  ),
-                                  const custom_text(
-                                      text: 'Half Day',
-                                      fontWeight: FontWeight.bold),
-                                ],
-                              ),
-                              if (provider.isHalfDay) ...[
-                                const SizedBox(height: 12),
-                                const custom_text(
-                                    text: "Half Day Date",
-                                    fontWeight: FontWeight.bold),
-                                const SizedBox(height: 8),
-                                GestureDetector(
-                                  onTap: () =>
-                                      provider.pickHalfDayDate(context),
-                                  child: AbsorbPointer(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[200],
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: cust_textfield(
-                                        controller: TextEditingController(
-                                          text: provider.halfDayDate != null
-                                              ? "${provider.halfDayDate!.day}-${provider.halfDayDate!.month}-${provider.halfDayDate!.year}"
-                                              : 'DD / MM / YY',
-                                        ),
-                                        validator: (value) {
-                                          if (value == null ||
-                                              value.isEmpty ||
-                                              value == 'DD / MM / YY') {
-                                            return "Select Halfday Date";
-                                          }
-                                          return null;
-                                        },
-                                        text: '',
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 16),
+                              _buildLabeledContainer(
+                                  'Employee ID', provider.empid.toString()),
+                              _buildLabeledContainer(
+                                  'Employee Name', provider.empname.toString()),
+                              _buildDropdownField(provider, controller),
+                              _buildDatePickers(provider, context),
+                              _buildHalfDayCheckbox(provider),
+                              if (provider.isHalfDay)
+                                _buildHalfDayDateField(provider, context),
                               if (provider.dateValidationError != null)
-                                custom_text(
-                                    text: provider.dateValidationError!,
-                                    color: Colors.red),
-                              const SizedBox(height: 10),
-                              const custom_text(
-                                  text: "Reason", fontWeight: FontWeight.bold),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: cust_textfield(
-                                  lines: 4,
-                                  controller: provider.reasonController,
-                                  text: 'Please enter reason',
-                                ),
-                              ),
-                              const SizedBox(height: 25),
-                              Center(
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      if (provider.formKey.currentState
-                                              ?.validate() ==
-                                          true) {
-                                        if (provider.validateDates()) {
-                                          final leaveType =
-                                              controller.leaveType!;
-                                          final fromDate = controller.startDate!
-                                              .toIso8601String();
-                                          final toDate = controller.endDate!
-                                              .toIso8601String();
-                                          final halfDay =
-                                              controller.isHalfDay ? 1 : 0;
-                                          final halfDayDate =
-                                              controller.isHalfDay
-                                                  ? controller.halfDayDate!
-                                                      .toIso8601String()
-                                                  : '';
-                                          final totalLeaveDays = controller
-                                              .calculateTotalLeaveDays();
-                                          final reason =
-                                              controller.reasonController.text;
-                                          final leaveApprover =
-                                              controller.approver!;
-                                          const followViaEmail = 1;
-                                          final postingDate =
-                                              DateTime.now().toIso8601String();
-                                          controller.postLeaveType(
-                                              leaveType,
-                                              fromDate,
-                                              toDate,
-                                              halfDay,
-                                              halfDayDate,
-                                              totalLeaveDays,
-                                              reason,
-                                              leaveApprover,
-                                              followViaEmail,
-                                              postingDate,
-                                              context);
-                                        } else {
-                                          controller.validateDates();
-                                        }
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryColor,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: const custom_text(
-                                      text: "Submit",
-                                      color: tertiaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    provider.dateValidationError!,
+                                    style: const TextStyle(color: Colors.red),
                                   ),
                                 ),
-                              ),
+                              _buildTextField(
+                                  'Reason', provider.reasonController),
+                              const SizedBox(height: 25),
+                              _buildSubmitButton(provider, controller, context),
                             ],
                           ),
                         );
@@ -361,6 +90,214 @@ class LeaveApplicationScreen extends StatelessWidget {
                 );
               }
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabeledContainer(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12.0),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(value, style: const TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownField(
+      LeaveRequestProvider provider, LeaveRequestProvider controller) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Leave Type',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: provider.leaveType,
+              decoration: const InputDecoration(border: InputBorder.none),
+              items: controller.leaveTypes.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: provider.setLeaveType,
+              validator: (value) => value == null || value.isEmpty
+                  ? 'Please select Leave Type'
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatePickers(
+      LeaveRequestProvider provider, BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+            child: _buildDateField('Start Date', provider.startDate,
+                provider.pickStartDate, context)),
+        const SizedBox(width: 16),
+        Expanded(
+            child: _buildDateField(
+                'End Date', provider.endDate, provider.pickEndDate, context)),
+      ],
+    );
+  }
+
+  Widget _buildDateField(String label, DateTime? date,
+      Future<void> Function(BuildContext) onTap, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => onTap(context),
+            child: AbsorbPointer(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  date != null
+                      ? "${date.day}/${date.month}/${date.year}"
+                      : 'DD / MM / YY',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHalfDayCheckbox(LeaveRequestProvider provider) {
+    return Row(
+      children: [
+        Checkbox(
+          value: provider.isHalfDay,
+          onChanged: (value) {
+            provider.setHalfDay(value ?? false);
+          },
+        ),
+        const Text('Half Day', style: TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildHalfDayDateField(
+      LeaveRequestProvider provider, BuildContext context) {
+    return _buildDateField('Half Day Date', provider.halfDayDate,
+        provider.pickHalfDayDate, context);
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: TextFormField(
+              controller: controller,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Please enter reason',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton(
+    LeaveRequestProvider provider,
+    LeaveRequestProvider controller,
+    BuildContext context,
+  ) {
+    return Center(
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primaryColor,
+          ),
+          onPressed: () {
+            if (provider.formKey.currentState?.validate() == true) {
+              if (provider.validateDates()) {
+                final leaveType = controller.leaveType!;
+                final fromDate = controller.startDate!.toIso8601String();
+                final toDate = controller.endDate!.toIso8601String();
+                final halfDay = controller.isHalfDay ? 1 : 0;
+                final halfDayDate = controller.isHalfDay
+                    ? controller.halfDayDate!.toIso8601String()
+                    : '';
+                final totalLeaveDays = controller.calculateTotalLeaveDays();
+                final reason = controller.reasonController.text;
+                final leaveApprover = controller.approver!;
+                const followViaEmail = 1;
+                final postingDate = DateTime.now().toIso8601String();
+                controller.submitLeave(
+                  leaveType,
+                  fromDate,
+                  toDate,
+                  halfDay,
+                  halfDayDate,
+                  totalLeaveDays,
+                  reason,
+                  leaveApprover,
+                  followViaEmail,
+                  postingDate,
+                  context,
+                );
+              }
+            }
+          },
+          child: const custom_text(
+            text: "Submit",
+            color: Colors.white,
           ),
         ),
       ),

@@ -1,5 +1,6 @@
 import 'package:efeone_mobile/controllers/notification.dart';
 import 'package:efeone_mobile/utilities/helpers.dart';
+import 'package:efeone_mobile/view/search_view.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart';
 import 'package:provider/provider.dart';
@@ -36,7 +37,7 @@ class NotificationView extends StatelessWidget {
 
     return WillPopScope(
       onWillPop: () async {
-        notificationController.fetchNotifications();
+      await  notificationController.fetchNotifications();
         return true;
       },
       child: Scaffold(
@@ -45,6 +46,25 @@ class NotificationView extends StatelessWidget {
             width: 90,
             child: Image.asset('assets/images/efeone Logo.png'),
           ),
+          actions: [
+              IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SearchScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.search,
+                color: Colors.blue,
+                size: 28,
+              )),
+          const SizedBox(
+            width: 10,
+          )
+          ],
         ),
         backgroundColor: Colors.grey[100],
         body: Padding(

@@ -8,9 +8,10 @@ import 'package:provider/provider.dart';
 
 class TimesheetRowBottomSheet extends StatefulWidget {
   final Map<String, dynamic>? timeLog;
-   final String selectedDate; 
+  final String selectedDate;
 
-  const TimesheetRowBottomSheet({super.key, this.timeLog,required this.selectedDate});
+  const TimesheetRowBottomSheet(
+      {super.key, this.timeLog, required this.selectedDate});
 
   @override
   _TimesheetRowBottomSheetState createState() =>
@@ -52,80 +53,112 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-     _dateController.text = widget.selectedDate;
+    _dateController.text = widget.selectedDate;
     final provider = Provider.of<TimesheetController>(context);
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: SingleChildScrollView(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  custom_text(
-                    text: "Add Row",
-                    color: primaryColor,
-                    fontSize: 22,
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const custom_text(
+                      text: "Add Row",
+                      color: primaryColor,
+                      fontSize: 22,
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          _confirmDelete(provider);
+                        },
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                        ))
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               _buildSectionTitle('Project Name'),
               const SizedBox(height: 10),
-              MyDropdownFormField(
-                selectedValue: _selectedProject,
-                items: provider.projects
-                    .map((project) => project['name'] as String)
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedProject = value;
-                  });
-                },
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: MyDropdownFormField(
+                  selectedValue: _selectedProject,
+                  items: provider.projects
+                      .map((project) => project['name'] as String)
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedProject = value;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 20),
               _buildSectionTitle('Activity Type'),
               const SizedBox(height: 10),
-              MyDropdownFormField(
-                selectedValue: _selectedCategory,
-                items: provider.activitytype
-                    .map((category) => category['name'] as String)
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: MyDropdownFormField(
+                  selectedValue: _selectedCategory,
+                  items: provider.activitytype
+                      .map((activity) => activity['name'] as String)
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCategory = value;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 20),
               _buildSectionTitle('Date'),
               const SizedBox(height: 10),
-              TextField(
-              controller: _dateController, // Display the passed date
-              readOnly: true, // Make the field read-only if needed
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey[200],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: TextField(
+                  controller: _dateController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-            ),
               const SizedBox(height: 20),
               _buildSectionTitle('Start Time'),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () => _pickStartTime(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  height: 60,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
@@ -147,10 +180,11 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
               GestureDetector(
                 onTap: () => _pickEndTime(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  height: 60,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
@@ -169,18 +203,22 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
               const SizedBox(height: 20),
               _buildSectionTitle('Work Description'),
               const SizedBox(height: 10),
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  hintText: 'Enter work description',
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                maxLines: 4,
+                child: TextField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide.none,
+                    ),
+                    hintText: 'Enter work description',
+                  ),
+                  maxLines: 4,
+                ),
               ),
               const SizedBox(height: 20),
               Row(
@@ -201,9 +239,10 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: primaryColor),
                   onPressed: () async {
-                    if (_selectedDate != null &&
-                        _selectedStartTime != null &&
+                    if (_selectedStartTime != null &&
                         _selectedEndTime != null &&
                         _selectedCategory != null &&
                         _selectedProject != null &&
@@ -213,18 +252,21 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
                             'Start time and end time cannot be the same.');
                         return;
                       }
+                      final DateTime finalDate = widget.selectedDate != null
+                          ? DateFormat('dd-MM-yyyy').parse(widget.selectedDate)
+                          : DateTime.now();
                       final fromTime = DateTime(
-                        _selectedDate!.year,
-                        _selectedDate!.month,
-                        _selectedDate!.day,
+                        finalDate.year,
+                        finalDate.month,
+                        finalDate.day,
                         _selectedStartTime!.hour,
                         _selectedStartTime!.minute,
                       );
 
                       final toTime = DateTime(
-                        _selectedDate!.year,
-                        _selectedDate!.month,
-                        _selectedDate!.day,
+                        finalDate.year,
+                        finalDate.month,
+                        finalDate.day,
                         _selectedEndTime!.hour,
                         _selectedEndTime!.minute,
                       );
@@ -290,7 +332,7 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
                   },
                   child: const custom_text(
                     text: "Save",
-                    color: primaryColor,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -352,13 +394,13 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
           return AlertDialog(
             title: const Text('Delete Time Log'),
             content: const Text(
-                'Are you sure you want to delete this time log? This action cannot be undone.'),
+                'Do you want to delete this Row? This action cannot be undone.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const custom_text(
                   text: "Cancel",
-                  color: Colors.grey,
+                  color: Colors.black,
                 ),
               ),
               TextButton(
@@ -432,5 +474,9 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
         fontSize: 16,
         fontWeight: FontWeight.bold,
         color: Colors.grey[700]);
+  }
+
+  String formatDateTime(DateTime dateTime) {
+    return DateFormat('yyyy-MM-dd HH:mm:ss:SSS').format(dateTime);
   }
 }

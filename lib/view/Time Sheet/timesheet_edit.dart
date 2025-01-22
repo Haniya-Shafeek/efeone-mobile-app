@@ -1,7 +1,9 @@
 import 'package:efeone_mobile/controllers/timesheet.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/utilities/helpers.dart';
+import 'package:efeone_mobile/view/Time%20Sheet/rowupdate_modalsheet.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_rowupdate.dart';
+import 'package:efeone_mobile/widgets/cust_elevated_button.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,9 +12,10 @@ class TimesheetEditViewScreen extends StatefulWidget {
   final String? timesheetId;
   final String? review;
   final String? plan;
+  final String? startdate;
 
   const TimesheetEditViewScreen(
-      {super.key, this.timesheetId, this.review, this.plan});
+      {super.key, this.timesheetId, this.review, this.plan, this.startdate});
 
   @override
   State<TimesheetEditViewScreen> createState() =>
@@ -22,12 +25,51 @@ class TimesheetEditViewScreen extends StatefulWidget {
 class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
   late TextEditingController endOfTheReviewController;
   late TextEditingController tomorrowplanController;
+  bool isLoading = true;
+    bool isTextFieldEdited = false; 
+
+  Future<void> _saveTimesheet() async {
+    final provider = Provider.of<TimesheetController>(context, listen: false);
+    final data = {
+      "end_of_the_day_review": endOfTheReviewController.text,
+      "tomorrows_plan": tomorrowplanController.text,
+    };
+    await provider.updateTimesheet(widget.timesheetId!, data, context);
+
+    await _fetchTimesheetDetails();
+  }
 
   @override
   void initState() {
     super.initState();
     endOfTheReviewController = TextEditingController(text: widget.review ?? '');
     tomorrowplanController = TextEditingController(text: widget.plan ?? '');
+    _fetchTimesheetDetails();
+  }
+
+  bool _isInitialized = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitialized) {
+      final provider = Provider.of<TimesheetController>(context, listen: false);
+      provider.fetchSingleTimesheetDetails(widget.timesheetId!);
+      _isInitialized = true;
+    }
+  }
+
+  Future<void> _fetchTimesheetDetails() async {
+    final provider = Provider.of<TimesheetController>(context, listen: false);
+    await provider.fetchSingleTimesheetDetails(widget.timesheetId!);
+    final details = provider.timesheetDetail;
+    if (details != null) {
+      setState(() {
+        endOfTheReviewController.text = details['end_of_the_day_review'] ?? '';
+        tomorrowplanController.text = details['tomorrows_plan'] ?? '';
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -46,31 +88,91 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
             child: Image.asset('assets/images/efeone Logo.png'),
           ),
           actions: [
-            provider.isSaved
-                ? TextButton(
+             (provider.isSaveButton || isTextFieldEdited)
+                ? CustomElevatedButton(
+                    onPressed: () {
+                      _saveTimesheet();
+                      provider.toggleButton();
+                    },
+                    label: "Save")
+                : CustomElevatedButton(
                     onPressed: () {
                       provider.submitTimesheet(widget.timesheetId!, context);
                     },
-                    child: const Text('submit'),
-                  )
-                : TextButton(
-                    onPressed: () {
-                      provider.submitTimesheet(widget.timesheetId!, context);
-                    },
-                    child:
-                        const custom_text(text: 'Submit', color: primaryColor),
-                  )
+                    label: "Submit"),
+            IconButton(
+              icon: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+              onPressed: () async {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      backgroundColor: Colors.blueGrey[900],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                      title: const custom_text(
+                        text: 'Confirm Submit',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      content: const custom_text(
+                        text: 'Do you really want to submit this item?',
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            bool? confirmDelete =
+                                await _showDeleteConfirmationDialog(context);
+                            if (confirmDelete!) {
+                              await provider.deleteTimesheet(
+                                  widget.timesheetId!, context);
+                              Navigator.pop(context);
+                            }
+                          },
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
-        body: FutureBuilder<void>(
-          future: provider.fetchSingleTimesheetDetails(widget.timesheetId!),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: primaryColor,));
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else {
-              return SingleChildScrollView(
+        body: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: primaryColor,
+                ),
+              )
+            : SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -86,10 +188,33 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
                       _buildInfoBox(
                           provider.timesheetDetail?['employee_name'] ?? "N/A"),
                       const SizedBox(height: 16),
-                      _buildSectionTitle("Posting Date"),
+                      _buildSectionTitle("Date"),
                       const SizedBox(height: 8),
-                      _buildInfoBox(
-                          provider.timesheetDetail?['posting_date'] ?? "N/A"),
+                      InkWell(
+                        onTap: () async {
+                          final selectedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now()
+                                .subtract(const Duration(days: 30)),
+                            lastDate: DateTime.now(),
+                          );
+                          
+
+                          if (selectedDate != null) {
+                            final formattedDate =
+                                selectedDate.toIso8601String().split('T').first;
+                            await provider.updateStartDate(
+                                widget.timesheetId!, formattedDate, context);
+                            setState(() {
+                              provider.timesheetDetail?['start_date'] =
+                                  formattedDate;
+                            });
+                          }
+                        },
+                        child: _buildInfoBox(
+                            provider.timesheetDetail?['start_date']),
+                      ),
                       const SizedBox(height: 16),
                       _buildSectionTitle("Time Log Details"),
                       const SizedBox(height: 8),
@@ -99,25 +224,41 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
                       ElevatedButton(
                         onPressed: () {
                           provider.addEmptyLogtimelog(context);
+                          final emptyLog =
+                              provider.timesheetDetail?['time_logs']?.last;
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (context) {
+                              return Container(
+                                constraints: BoxConstraints(
+                                  maxHeight:
+                                      MediaQuery.of(context).size.height * 0.8,
+                                ),
+                                child: TimesheetRowupdateviewSheet(
+                                  startdate: widget.startdate,
+                                  timesheetId: widget.timesheetId!,
+                                  timeLog: emptyLog ?? {}, // Pass the empty log
+                                ),
+                              );
+                            },
+                          );
                         },
                         child: const custom_text(
                             text: 'Add Row', color: primaryColor),
                       ),
                       const SizedBox(height: 20),
-                      _buildSectionTitle("End Of The Review"),
+                      _buildSectionTitle("End of the Day Review"),
                       const SizedBox(height: 10),
                       _buildTextField(endOfTheReviewController),
                       const SizedBox(height: 20),
-                      _buildSectionTitle("Tomorrow's Plan"),
+                      _buildSectionTitle("Tomorrows Plan"),
                       const SizedBox(height: 10),
                       _buildTextField(tomorrowplanController),
                     ],
                   ),
                 ),
-              );
-            }
-          },
-        ),
+              ),
       ),
     );
   }
@@ -132,21 +273,33 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.grey[200],
-        labelStyle: TextStyle(
-          color: Colors.blueGrey[900],
-          fontWeight: FontWeight.bold,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(8),
       ),
-      maxLines: 3,
+      child: TextField(
+        onChanged: (value) {
+          setState(() {
+            isTextFieldEdited = true; // Update the flag when the user types
+          });
+        },
+        controller: controller,
+        decoration: InputDecoration(
+          labelStyle: TextStyle(
+            color: Colors.blueGrey[900],
+            fontWeight: FontWeight.bold,
+          ),
+          
+          border: const OutlineInputBorder(
+            borderSide: BorderSide.none,
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 8, horizontal: 3),
+        ),
+        maxLines: 3,
+      ),
     );
   }
 
@@ -155,9 +308,9 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(12),
-      ),
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey)),
       child: custom_text(text: text, fontSize: fontSize),
     );
   }
@@ -168,31 +321,38 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
       scrollDirection: Axis.horizontal,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(
-              color: const Color.fromRGBO(238, 238, 238, 1), width: 2),
-          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: DataTable(
-          columnSpacing: 12,
+          columnSpacing: 20, // Adjust spacing between columns
           headingRowColor: MaterialStateProperty.resolveWith(
             (states) => const Color.fromRGBO(238, 238, 238, 1),
           ),
-          columns: const [
-            DataColumn(label: Text('Activity')),
-            DataColumn(label: Text('From Time')),
-            DataColumn(label: Text('To Time')),
-            DataColumn(label: Text('Hours')),
-            DataColumn(label: Text('Project')),
-            DataColumn(label: Icon(Icons.settings)),
+          dataRowColor: MaterialStateProperty.resolveWith(
+            (states) => Colors.white,
+          ),
+          columns: [
+            _buildHeaderWithPadding('No.'),
+            _buildHeaderWithPadding('Activity'),
+            _buildHeaderWithPadding('From Time'),
+            _buildHeaderWithPadding('Hours'),
+            _buildHeaderWithPadding('Project'),
+            const DataColumn(
+              label: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                child: Icon(Icons.settings),
+              ),
+            ),
           ],
           rows: logs?.map((log) {
                 return DataRow(
                   cells: [
-                    DataCell(Text(log['activity_type']?.toString() ?? "N/A")),
-                    DataCell(Text(log['from_time']?.toString() ?? "N/A")),
-                    DataCell(Text(log['to_time']?.toString() ?? "N/A")),
-                    DataCell(Text(roundHours(log['hours'] ?? 0).toString())),
-                    DataCell(Text(log['project']?.toString() ?? "N/A")),
+                    _buildCell((log['idx']).toString()),
+                    _buildCell(log['activity_type']?.toString() ?? "N/A"),
+                    _buildCell(formatFromTime(log['from_time']) ?? ""),
+                    _buildCell(roundHours(log['hours'] ?? 0).toString()),
+                    _buildCell(log['project']?.toString() ?? "N/A"),
                     DataCell(
                       IconButton(
                         onPressed: () async {
@@ -222,6 +382,57 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
               [],
         ),
       ),
+    );
+  }
+
+  DataColumn _buildHeaderWithPadding(String title) {
+    return DataColumn(
+      label: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  DataCell _buildCell(String value) {
+    return DataCell(
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+        child: Text(value),
+      ),
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmationDialog(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Timesheet'),
+          content:
+              const Text('Are you sure you want to delete this timesheet?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // User canceled
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // User confirmed
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

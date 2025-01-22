@@ -1,5 +1,5 @@
-import 'package:efeone_mobile/controllers/checkin_permission.dart';
-import 'package:efeone_mobile/controllers/leave_application.dart';
+import 'package:efeone_mobile/controllers/checkin.dart';
+import 'package:efeone_mobile/controllers/leave.dart';
 import 'package:efeone_mobile/view/ECP/Ecp_list_view.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_list_view.dart';
 import 'package:flutter/material.dart';

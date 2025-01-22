@@ -133,6 +133,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         color: Colors.white70,
                                       ),
                                     ),
+                                    
                                     actions: <Widget>[
                                       TextButton(
                                         onPressed: () {

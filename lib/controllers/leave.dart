@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:efeone_mobile/utilities/config.dart';
+import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/view/leave%20application/leavelist_view.dart';
+import 'package:efeone_mobile/widgets/cust_snackbar.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,10 +10,10 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 class LeaveRequestProvider extends ChangeNotifier {
-  String? _leaveType;
   String? _approver;
   String? _empid;
   String? _empname;
+  String? _usr;
   DateTime? _startDate;
   DateTime? _endDate;
   String? _reason;
@@ -20,15 +22,24 @@ class LeaveRequestProvider extends ChangeNotifier {
   DateTime? _halfDayDate;
   List<String>? _lwps;
   bool isLoading = false;
+  String? leaveType;
   double _totalLeaves = 0.0;
   double _expiredLeaves = 0.0;
   double _leavesTaken = 0.0;
   double _leavesPendingApproval = 0.0;
   double _remainingLeaves = 0.0;
+  double _privilegeLeaveTotal = 0.0;
+  double _privilegeLeaveExpired = 0.0;
+  double _privilegeLeaveTaken = 0.0;
+  double _privilegeLeavePendingApproval = 0.0;
+  double _privilegeLeaveRemaining = 0.0;
 
-  String? get leaveType => _leaveType;
+  List<String> leaveTypes = [];
+  String _status = 'Open';
+
   String? get approver => _approver;
   String? get empid => _empid;
+  String? get usr => _usr;
   String? get empname => _empname;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
@@ -44,11 +55,19 @@ class LeaveRequestProvider extends ChangeNotifier {
   double get leavesTaken => _leavesTaken;
   double get leavesPendingApproval => _leavesPendingApproval;
   double get remainingLeaves => _remainingLeaves;
+  double get privilegeLeaveTotal => _privilegeLeaveTotal;
+  double get privilegeLeaveExpired => _privilegeLeaveExpired;
+  double get privilegeLeaveTaken => _privilegeLeaveTaken;
+  double get privilegeLeavePendingApproval => _privilegeLeavePendingApproval;
+  double get privilegeLeaveRemaining => _privilegeLeaveRemaining;
 
   final formKey = GlobalKey<FormState>();
   TextEditingController employeeIdController = TextEditingController();
   TextEditingController employeeNameController = TextEditingController();
   TextEditingController reasonController = TextEditingController();
+
+  List<Map<String, dynamic>> filteredLeaveApplications = [];
+  String filterType = 'My Leaves';
 
   Future<void> loadSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -56,13 +75,36 @@ class LeaveRequestProvider extends ChangeNotifier {
     _empid = prefs.getString('employeeid') ?? '';
     employeeNameController.text = prefs.getString('fullName') ?? '';
     _empname = prefs.getString('fullName') ?? '';
+    _usr = prefs.getString('usr') ?? '';
+    notifyListeners();
+  }
+ 
+ void applyFilter() {
+    if (filterType == 'My Leaves') {
+      // Show leaves owned by the logged-in user
+      filteredLeaveApplications = leaveApplications
+          .where((leave) => leave['owner'] == _usr)
+          .toList();
+    } else if (filterType == 'Team Leaves') {
+      // Show leaves not owned by the logged-in user
+      filteredLeaveApplications = leaveApplications
+          .where((leave) => leave['owner'] != _usr)
+          .toList();
+    } else {
+      // Show all leaves if no filter is applied
+      filteredLeaveApplications = leaveApplications;
+    }
     notifyListeners();
   }
 
-  void setLeaveType(String? value) {
-    _leaveType = value;
-    notifyListeners();
+  void setFilterType(String type) {
+    filterType = type;
+    applyFilter(); // Reapply the filter whenever the type changes
   }
+  // void setLeaveType(String? value) {
+  //   _leaveType = value;
+  //   notifyListeners();
+  // }
 
   void setStartDate(DateTime? date) {
     _startDate = date;
@@ -112,7 +154,7 @@ class LeaveRequestProvider extends ChangeNotifier {
     );
     if (picked != null && picked != startDate) {
       setStartDate(picked);
-      validateDates(); // Validate dates after picking start date
+      validateDates();
     }
   }
 
@@ -139,7 +181,7 @@ class LeaveRequestProvider extends ChangeNotifier {
     );
     if (picked != null && picked != endDate) {
       setEndDate(picked);
-      validateDates(); // Validate dates after picking end date
+      validateDates();
     }
   }
 
@@ -166,7 +208,7 @@ class LeaveRequestProvider extends ChangeNotifier {
     );
     if (picked != null && picked != halfDayDate) {
       setHalfDayDate(picked);
-      validateDates(); // Validate dates after picking half-day date
+      validateDates();
     }
   }
 
@@ -195,24 +237,24 @@ class LeaveRequestProvider extends ChangeNotifier {
         return false;
       }
     }
-    dateValidationError = null; // Clear the error if validation passes
+    dateValidationError = null;
     notifyListeners();
     return true;
   }
 
   //fetch leave application type
-  Future<List<String>> fetchLeaveDetails() async {
+  Future<void> fetchLeaveDetails() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
       final String employeeId = prefs.getString('employeeid') ?? '';
 
-      // Format date as 'yyyy-MM-dd' without time
-      final String date =
-          DateFormat('yyyy-MM-dd').format(_startDate ?? DateTime.now());
+      // Format date as 'yyyy-MM-dd'
+      final String date = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       final url = Uri.parse(
-          '${Config.baseUrl}/api/method/hrms.hr.doctype.leave_application.leave_application.get_leave_details?employee=$employeeId&date=$date');
+        '${Config.baseUrl}/api/method/hrms.hr.doctype.leave_application.leave_application.get_leave_details?employee=$employeeId&date=$date',
+      );
 
       final response = await http.get(
         url,
@@ -224,50 +266,98 @@ class LeaveRequestProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-
-        // Null check for leave allocation
-        final leaveAllocation =
-            jsonResponse['message']['leave_allocation']?['Casual Leave'];
-        _approver = jsonResponse['message']['leave_approver'];
-        _lwps = List<String>.from(jsonResponse['message']['lwps'] ?? []);
+        final leaveAllocation = jsonResponse['message']['leave_allocation'];
 
         if (leaveAllocation != null) {
-          // Ensure that all fields are treated as doubles, only if leaveAllocation is not null
+          // Initialize leave types list
+          leaveTypes = [];
+
+          // Add all leave types from the `leave_allocation` keys
+          leaveTypes.addAll(leaveAllocation.keys);
+
+          // Fetch Casual Leave details
           _totalLeaves =
-              (leaveAllocation['total_leaves'] as num?)?.toDouble() ?? 0.0;
-          _expiredLeaves =
-              (leaveAllocation['expired_leaves'] as num?)?.toDouble() ?? 0.0;
-          _leavesTaken =
-              (leaveAllocation['leaves_taken'] as num?)?.toDouble() ?? 0.0;
-          _leavesPendingApproval =
-              (leaveAllocation['leaves_pending_approval'] as num?)
+              (leaveAllocation['Casual Leave']?['total_leaves'] as num?)
                       ?.toDouble() ??
                   0.0;
+          _expiredLeaves =
+              (leaveAllocation['Casual Leave']?['expired_leaves'] as num?)
+                      ?.toDouble() ??
+                  0.0;
+          _leavesTaken =
+              (leaveAllocation['Casual Leave']?['leaves_taken'] as num?)
+                      ?.toDouble() ??
+                  0.0;
+          _leavesPendingApproval = (leaveAllocation['Casual Leave']
+                      ?['leaves_pending_approval'] as num?)
+                  ?.toDouble() ??
+              0.0;
           _remainingLeaves =
-              (leaveAllocation['remaining_leaves'] as num?)?.toDouble() ?? 0.0;
+              (leaveAllocation['Casual Leave']?['remaining_leaves'] as num?)
+                      ?.toDouble() ??
+                  0.0;
+
+          // Fetch Privilege Leave details
+          _privilegeLeaveTotal =
+              (leaveAllocation['Privilege Leave']?['total_leaves'] as num?)
+                      ?.toDouble() ??
+                  0.0;
+          _privilegeLeaveExpired =
+              (leaveAllocation['Privilege Leave']?['expired_leaves'] as num?)
+                      ?.toDouble() ??
+                  0.0;
+          _privilegeLeaveTaken =
+              (leaveAllocation['Privilege Leave']?['leaves_taken'] as num?)
+                      ?.toDouble() ??
+                  0.0;
+          _privilegeLeavePendingApproval = (leaveAllocation['Privilege Leave']
+                      ?['leaves_pending_approval'] as num?)
+                  ?.toDouble() ??
+              0.0;
+          _privilegeLeaveRemaining =
+              (leaveAllocation['Privilege Leave']?['remaining_leaves'] as num?)
+                      ?.toDouble() ??
+                  0.0;
         } else {
-          // Handle the case when leaveAllocation is null
+          leaveTypes = [];
           _totalLeaves = 0.0;
           _expiredLeaves = 0.0;
           _leavesTaken = 0.0;
           _leavesPendingApproval = 0.0;
           _remainingLeaves = 0.0;
+
+          // Set Privilege Leave details to default
+          _privilegeLeaveTotal = 0.0;
+          _privilegeLeaveExpired = 0.0;
+          _privilegeLeaveTaken = 0.0;
+          _privilegeLeavePendingApproval = 0.0;
+          _privilegeLeaveRemaining = 0.0;
         }
 
+        // Extract leave approver and LWPs
+        _approver = jsonResponse['message']['leave_approver'];
+        _lwps = List<String>.from(jsonResponse['message']['lwps'] ?? []);
+
+        // Optionally, add LWPs to leave types
+        leaveTypes.addAll(_lwps ?? []);
+
         notifyListeners();
-        return _lwps!;
       } else {
-        print('Failed to load leave details: ${response.statusCode}');
-        throw Exception('Failed to load leave details: ${response.statusCode}');
+        throw Exception('Failed to load leave details');
       }
     } catch (e) {
       print('Error fetching leave details: $e');
-      throw Exception('Failed to load leave details');
+      throw Exception('Failed to fetch leave details');
     }
   }
 
+  void setLeaveType(String? type) {
+    leaveType = type;
+    notifyListeners();
+  }
+
   //post leaveapplication details
-  Future<void> postLeaveType(
+  Future<void> submitLeave(
       String leaveType,
       String fromDate,
       String toDate,
@@ -314,27 +404,10 @@ class LeaveRequestProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: custom_text(
-                text: 'Successly Posted',
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ));
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "Leave Posted Successfully",
+            bgColor: Colors.green);
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -343,11 +416,14 @@ class LeaveRequestProvider extends ChangeNotifier {
         print('Success: $jsonResponse');
       } else {
         print('Failed to post leave type: ${response.statusCode}');
-        throw Exception('Failed to post leave type: ${response.statusCode}');
+        throw Exception('Failed to post leave : ${response.statusCode}');
       }
     } catch (e) {
       print('Error posting leave type: $e');
-      throw Exception('Failed to post leave type');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to submit leave'),
+        backgroundColor: Colors.red,
+      ));
     }
   }
 
@@ -370,8 +446,8 @@ class LeaveRequestProvider extends ChangeNotifier {
       final token = prefs.getString("cookie");
       // final String employeeId = prefs.getString('employeeid') ?? '';
       final url = Uri.parse(
-          '${Config.baseUrl}/api/resource/Leave%20Application?fields=["*"]&order_by=posting_date%20desc');
-
+          '${Config.baseUrl}/api/resource/Leave%20Application?fields=["*"]&order_by=creation%20desc');
+      print(url);
       final response = await http.get(
         url,
         headers: <String, String>{
@@ -439,6 +515,10 @@ class LeaveRequestProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to delete leave'),
+        backgroundColor: Colors.red,
+      ));
     }
   }
 
@@ -490,27 +570,10 @@ class LeaveRequestProvider extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       // Success
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Center(
-            child: custom_text(
-              text: 'Successfully Updated',
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ));
+      CustomSnackbar.showSnackbar(
+          context: context,
+          message: "Leave Updated Successfully",
+          bgColor: Colors.green);
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -546,9 +609,95 @@ class LeaveRequestProvider extends ChangeNotifier {
     }
   }
 
+//method to update leave status
+  Future<void> updateLeavestatus(
+      {required String leaveApplicationId,
+      required String status,
+      required BuildContext context}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("cookie");
+    final url = Uri.parse(
+        '${Config.baseUrl}/api/resource/Leave%20Application/$leaveApplicationId');
+
+    final Map<String, dynamic> data = {'workflow_state': status};
+
+    final headers = {
+      'Content-Type': 'application/json',
+      'cookie': '$token',
+    };
+
+    final response = await http.put(
+      url,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      // Success
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Center(
+            child: custom_text(
+              text: 'Successfully Status Updated',
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ));
+      // Navigator.pushReplacement(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (context) => const CheckinPermissionListScreen(),
+      //     ));
+      notifyListeners();
+      print('Ecp Status updated successfully');
+    } else {
+      // Error handling
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: custom_text(
+              text: 'Cannot Updated',
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ));
+      print('Failed to update Leave Application: ${response.statusCode}');
+      print('Response: ${response.body}');
+    }
+  }
+  //Method to change the status
+
+  void setStatus(String newStatus) {
+    _status = newStatus;
+    notifyListeners();
+  }
+
 //mathod to clear values
   void clearValues() {
-    _leaveType = null;
     _startDate = null;
     _endDate = null;
     _isHalfDay = false;

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:efeone_mobile/utilities/config.dart';
-import 'package:efeone_mobile/view/login_view.dart';
 
 class Profilecontroller extends ChangeNotifier {
   String _fullname = '';
@@ -23,6 +22,7 @@ class Profilecontroller extends ChangeNotifier {
   String get designation => _designation;
   String get dateofjoining => _dateofjoining;
 
+  //Method to get employee details
   Future<void> getempdetails() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("cookie");
@@ -103,8 +103,7 @@ class Profilecontroller extends ChangeNotifier {
 
     if (response.statusCode == 200) {
       prefs.setBool('islogin', false);
-      prefs.remove('usr');
-      prefs.remove('pwd');
+
       prefs.remove('cookie');
       prefs.remove('employeeid');
       prefs.remove('log_time');
@@ -112,18 +111,16 @@ class Profilecontroller extends ChangeNotifier {
       prefs.remove('img_url');
       prefs.remove('fullName');
       // Profile details
-      prefs.remove('user_name');
-      prefs.remove('cookie');
-      prefs.remove('id');
-      prefs.remove('email');
       prefs.remove('dob');
       prefs.remove('designation');
       prefs.remove('dateofjoing');
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Loginscreen()),
-      );
+      Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
+
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => Loginscreen()),
+      // );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

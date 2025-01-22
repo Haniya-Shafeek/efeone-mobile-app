@@ -1,4 +1,6 @@
+import 'package:efeone_mobile/view/search_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
+import 'package:efeone_mobile/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 
 class Todoview extends StatelessWidget {
@@ -24,12 +26,7 @@ class Todoview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: SizedBox(
-          width: 90,
-          child: Image.asset('assets/images/efeone Logo.png'),
-        ),
-      ),
+      appBar: const CustomAppBar(),
       backgroundColor: Colors.grey[50],
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
@@ -51,11 +48,9 @@ class Todoview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildRichText("ID", name,
+                _buildRichText("Type", type,
                     fontWeight: FontWeight.bold, color: Colors.black87),
                 const SizedBox(height: 16),
-                _buildRichText("Reference Type", type),
-                const SizedBox(height: 12),
                 _buildRichText("Description", description),
                 const SizedBox(height: 12),
                 _buildRichText("Date", date),

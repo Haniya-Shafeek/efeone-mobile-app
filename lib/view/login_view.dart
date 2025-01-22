@@ -2,19 +2,48 @@ import 'package:efeone_mobile/controllers/login.dart';
 import 'package:efeone_mobile/view/forgetpwd_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class Loginscreen extends StatelessWidget {
-  Loginscreen({super.key});
+class Loginscreen extends StatefulWidget {
+  const Loginscreen({super.key});
 
+  @override
+  State<Loginscreen> createState() => _LoginscreenState();
+}
+
+class _LoginscreenState extends State<Loginscreen> {
   final TextEditingController emailController = TextEditingController();
+
   final TextEditingController passwordController = TextEditingController();
+  bool isLoggingIn = false;
+
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    String? savedEmail = prefs.getString('usr');
+    String? savedPassword = prefs.getString('pwd');
+
+    if (savedEmail != null) {
+      emailController.text = savedEmail;
+    }
+
+    if (savedPassword != null) {
+      passwordController.text = savedPassword;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final loginController = Provider.of<LoginController>(context);
     final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: GestureDetector(
@@ -40,9 +69,8 @@ class Loginscreen extends StatelessWidget {
                           maxWidth: size.width * 0.5,
                         ),
                         child: Image.asset(
-                          'assets/images/efeone Logo.png', // Replace with your logo path
-                          fit: BoxFit
-                              .contain, // Ensure the image scales proportionally
+                          'assets/images/efeone Logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -72,9 +100,10 @@ class Loginscreen extends StatelessWidget {
                           prefixIcon: Icon(Icons.email,
                               color: Color.fromARGB(255, 6, 79, 138)),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 10),
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
-                        style: TextStyle(fontSize: size.height * 0.02),
+                        style: TextStyle(fontSize: size.height * 0.018),
                       ),
                     ),
                     SizedBox(height: size.height * 0.02),
@@ -115,38 +144,40 @@ class Loginscreen extends StatelessWidget {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 12),
                         ),
-                        style: TextStyle(fontSize: size.height * 0.02),
+                        style: TextStyle(fontSize: size.height * 0.018),
                       ),
                     ),
                     SizedBox(height: size.height * 0.03),
                     // Login Button
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (_formKey.currentState!.validate()) {
-                          loginController.connectioncheck(context);
-                          loginController.postLoginDetails(
+                          loginController.setVerifying(true);
+                          await loginController.connectioncheck(context);
+                          await loginController.postLoginDetails(
                             emailController.text,
                             passwordController.text,
                             context,
                           );
+                          loginController.setVerifying(false);
                         }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 6, 79, 138),
                         padding:
-                            EdgeInsets.symmetric(vertical: size.height * 0.02),
+                            EdgeInsets.symmetric(vertical: size.height * 0.015),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
-                        'LOGIN',
+                        loginController.buttonText,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: size.height * 0.025,
+                          fontSize: size.height * 0.02,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

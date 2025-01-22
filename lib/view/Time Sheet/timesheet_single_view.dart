@@ -1,6 +1,5 @@
 import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/utilities/helpers.dart';
-import 'package:efeone_mobile/view/Time Sheet/timesheet_list_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -43,7 +42,23 @@ class TimesheetDetailScreen extends StatelessWidget {
             .fetchTimesheetData(tsname), // Call the method returning a Future
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-           return const Center(child: CircularProgressIndicator(color: primaryColor,));
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildGreyPlaceholderCard(), // Placeholder for Timesheet Overview
+                  const SizedBox(height: 16),
+                  _buildGreyPlaceholderCard(
+                      height: 150), // Placeholder for Time Logs
+                  const SizedBox(height: 16),
+                  _buildGreyPlaceholderCard(
+                      height: 80), // Placeholder for End of Day Review
+                  const SizedBox(height: 16),
+                  _buildGreyPlaceholderCard(
+                      height: 80), // Placeholder for Tomorrow's Plan
+                ],
+              ),
+            );
           } else if (snapshot.hasError) {
             print('Error: ${snapshot.error}'); // Log the error
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -83,6 +98,7 @@ class TimesheetDetailScreen extends StatelessWidget {
     final date = formatDate(data['start_date']);
 
     return Card(
+      color: Colors.blue[50],
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 4,
       child: Padding(
@@ -109,9 +125,21 @@ class TimesheetDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildGreyPlaceholderCard({double height = 150}) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+    );
+  }
+
   Widget _buildTimeLogsCard(
       List<dynamic> timeLogs, double screenWidth, BuildContext context) {
     return Card(
+      color: Colors.blue[50],
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 4,
       child: Padding(
@@ -138,7 +166,7 @@ class TimesheetDetailScreen extends StatelessWidget {
                   5: FixedColumnWidth(80),
                 },
                 border: TableBorder.all(
-                  color: Colors.blueGrey[200]!,
+                  color: Colors.grey,
                   style: BorderStyle.solid,
                   width: 1,
                 ),
@@ -165,6 +193,7 @@ class TimesheetDetailScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0), // Consistent margin
       child: Card(
+        color: Colors.blue[50],
         elevation: 4,
         child: SizedBox(
           width: double.infinity, // Use double.infinity for full width
@@ -295,10 +324,12 @@ class TimesheetDetailScreen extends StatelessWidget {
             TextButton(
               child: const Text('Delete'),
               onPressed: () {
-                provider.deleteTimesheet(tsname);
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (context) => const TimesheetListviewScreen(),
-                )); // Close the dialog
+                provider.deleteTimesheet(tsname, context);
+                Navigator.popUntil(
+                  context,
+                  (route) =>
+                      route.isFirst || route.settings.name == '/timesheetList',
+                ); // Close the dialog
               },
             ),
           ],

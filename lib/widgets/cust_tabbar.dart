@@ -4,12 +4,13 @@ class CustomTabBar extends StatefulWidget {
   final List<String> tabs;
   final List<Widget> screens;
   final Function(int) onTabChanged;
-
+ final int initialIndex;
   const CustomTabBar({
     super.key,
     required this.tabs,
     required this.screens,
     required this.onTabChanged,
+    required this.initialIndex
   });
 
   @override
@@ -23,8 +24,8 @@ class _CustomTabBarState extends State<CustomTabBar> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: widget.tabs.length, vsync: this, initialIndex: 0);
-    _pageController = PageController(initialPage: 0);
+    _tabController = TabController(length: widget.tabs.length, vsync: this, initialIndex: widget.initialIndex);
+    _pageController = PageController(initialPage: widget.initialIndex);
     _tabController.addListener(_handleTabSelection);
   }
 

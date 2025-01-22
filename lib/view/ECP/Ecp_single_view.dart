@@ -1,14 +1,24 @@
-import 'package:efeone_mobile/controllers/checkin_permission.dart';
+import 'package:efeone_mobile/controllers/checkin.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/utilities/helpers.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
+import 'package:efeone_mobile/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class CheckinPermissionDetailScreen extends StatelessWidget {
+class CheckinPermissionDetailScreen extends StatefulWidget {
   final Map<String, dynamic> ecpItem;
 
   const CheckinPermissionDetailScreen({super.key, required this.ecpItem});
+
+  @override
+  State<CheckinPermissionDetailScreen> createState() =>
+      _CheckinPermissionDetailScreenState();
+}
+
+class _CheckinPermissionDetailScreenState
+    extends State<CheckinPermissionDetailScreen> {
+  bool showDropdown = true;
 
   @override
   Widget build(BuildContext context) {
@@ -16,105 +26,88 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
         Provider.of<CheckinPermissionProvider>(context, listen: false);
     provider.loadSharedPrefs();
 
-    final String employee = ecpItem['employee_name'] ?? 'N/A';
-    final String name = ecpItem['name'] ?? 'N/A';
-    final String date = formatDate(ecpItem['date'] ?? 'N/A');
-    final String logType = ecpItem['log_type'] ?? 'N/A';
-    final String arrivalTime = ecpItem['arrival_time'] ?? 'N/A';
-    final String leavingTime = ecpItem['leaving_time'] ?? 'N/A';
-    final String reason = ecpItem['reason'] ?? 'N/A';
-    final String? isReportsToUser = ecpItem['reports_to_user'];
-    // final String status = ecpItem['workflow_state'] ?? 'N/A';
-    // final String owner = ecpItem['owner'] ?? 'N/A';
-
-    final double textSize = MediaQuery.of(context).size.width * 0.04;
-    final double fieldPadding = MediaQuery.of(context).size.width * 0.03;
+    final String employee = widget.ecpItem['employee_name'] ?? 'N/A';
+    final String name = widget.ecpItem['name'] ?? 'N/A';
+    final String date = formatDate(widget.ecpItem['date'] ?? 'N/A');
+    final String logType = widget.ecpItem['log_type'] ?? 'N/A';
+    final String arrivalTime = widget.ecpItem['arrival_time'] ?? 'N/A';
+    final String leavingTime = widget.ecpItem['leaving_time'] ?? 'N/A';
+    final String reason = widget.ecpItem['reason'] ?? 'N/A';
+    final String? isReportsToUser = widget.ecpItem['reports_to_user'];
+    final status = widget.ecpItem['workflow_state'] ?? 'N/A';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Align(
-          alignment: Alignment.centerLeft,
-          child: Image.asset(
-            'assets/images/efeone Logo.png',
-            width: MediaQuery.of(context).size.width * 0.2,
+      appBar: CustomAppBar(),
+      body: Padding(
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+        child: Container(
+          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow("Employee:", employee),
+              _buildDetailRow("Ecp Id:", name),
+              _buildDetailRow("Date:", date),
+              _buildDetailRow("Log Type:", logType),
+              if (logType.trim().toLowerCase() == 'in')
+                _buildDetailRow("Arrival Time:", arrivalTime),
+              if (logType.trim().toLowerCase() == 'out')
+                _buildDetailRow("Leaving Time:", leavingTime),
+              _buildDetailRow("Reason:", reason),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+              Center(
+                child: isReportsToUser == provider.logmail
+                    ? (showDropdown
+                        ? _buildStatusDropdown(context)
+                        : _buildStatusButton(context, status))
+                    : _buildStatusButton(context, status),
+              ),
+            ],
           ),
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.of(context).size.width * 0.05,
-          vertical: MediaQuery.of(context).size.height * 0.02,
-        ),
-        child: ListView(
-          children: [
-            _buildSectionTitle("Employee", textSize),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            _buildTextField(employee, fieldPadding),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            _buildSectionTitle("Ecp Id", textSize),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            _buildTextField(name, fieldPadding),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            _buildSectionTitle("Date", textSize),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            _buildTextField(date, fieldPadding),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            _buildSectionTitle("Log Type", textSize),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            _buildTextField(logType, fieldPadding),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            if (logType.trim().toLowerCase() == 'in') ...[
-              _buildSectionTitle("Arrival Time", textSize),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-              _buildTextField(arrivalTime, fieldPadding),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-            ],
-            if (logType.trim().toLowerCase() == 'out') ...[
-              _buildSectionTitle("Leaving Time", textSize),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-              _buildTextField(leavingTime, fieldPadding),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.025),
-            ],
-            _buildSectionTitle("Reason", textSize),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-            _buildTextField(reason, fieldPadding, maxLines: 3),
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            if (isReportsToUser == provider.logmail)
-              Center(child: _buildStatusDropdown(context))
-            else
-              Center(child: _buildStatusButton(context)),
-          ],
-        ),
+    );
+  }
+
+  Widget _buildDetailRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: custom_text(
+              text: title,
+              fontWeight: FontWeight.normal,
+              fontSize: MediaQuery.of(context).size.width * 0.04,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: custom_text(
+              text: value,
+              fontSize: MediaQuery.of(context).size.width * 0.04,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title, double textSize) {
-    return custom_text(
-        text: title, fontWeight: FontWeight.bold, fontSize: textSize);
-  }
-
-  Widget _buildTextField(String text, double fieldPadding, {int maxLines = 1}) {
-    return TextField(
-      controller: TextEditingController(text: text),
-      decoration: InputDecoration(
-        contentPadding: EdgeInsets.all(fieldPadding),
-        filled: true,
-        fillColor: Colors.grey[200],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      maxLines: maxLines,
-      readOnly: true,
-    );
-  }
-
-  Widget _buildStatusButton(BuildContext context) {
-    final status = ecpItem['workflow_state'] ?? 'N/A';
+  Widget _buildStatusButton(BuildContext context, String status) {
     final Color statusColor = _getStatusColor(status);
-
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -129,7 +122,7 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
           ),
         ),
         child: custom_text(
-          text: 'Status: $status',
+          text: status,
           color: tertiaryColor,
           fontWeight: FontWeight.bold,
           fontSize: MediaQuery.of(context).size.width * 0.045,
@@ -140,9 +133,9 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
 
   Widget _buildStatusDropdown(BuildContext context) {
     final provider = Provider.of<CheckinPermissionProvider>(context);
-    final String ecpId = ecpItem['name'] ?? 'N/A';
-    final String currentStatus = ecpItem['workflow_state'] ?? 'N/A';
-    final List<String> statuses = ['Open', 'Pending', 'Approved', 'Rejected'];
+    final String ecpId = widget.ecpItem['name'] ?? 'N/A';
+    final String currentStatus = widget.ecpItem['workflow_state'] ?? 'N/A';
+    final List<String> statuses = ['Pending', 'Approved', 'Rejected'];
 
     return DropdownButton<String>(
       value: currentStatus,
@@ -151,6 +144,9 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
           context.read<CheckinPermissionProvider>().setStatus(newStatus);
           provider.updateEcpstatus(
               ecpApplicationId: ecpId, status: newStatus, context: context);
+          setState(() {
+            showDropdown = false;
+          });
         }
       },
       items: statuses.map((status) {
@@ -165,13 +161,13 @@ class CheckinPermissionDetailScreen extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'Approved':
-        return Colors.green;
+        return Colors.green[400]!;
       case 'Open':
-        return Colors.orange;
+        return Colors.orange[400]!;
       case 'Rejected':
-        return Colors.red;
+        return Colors.red[400]!;
       default:
-        return Colors.grey;
+        return Colors.grey[400]!;
     }
   }
 }

@@ -232,6 +232,7 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
                         EdgeInsets.symmetric(vertical: 15, horizontal: padding),
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
+                      border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -259,6 +260,7 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
                     padding:
                         EdgeInsets.symmetric(vertical: 15, horizontal: padding),
                     decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -287,7 +289,7 @@ class _TsEditviewState extends State<TimesheetRowaddview> {
                     filled: true,
                     fillColor: Colors.grey[200],
                     border: OutlineInputBorder(
-                      borderSide: BorderSide.none,
+                      borderSide: BorderSide(color: Colors.grey),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     hintText: 'Enter work description',

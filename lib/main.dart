@@ -1,18 +1,27 @@
-import 'package:efeone_mobile/controllers/checkin_permission.dart';
+import 'package:efeone_mobile/controllers/chat.dart';
+import 'package:efeone_mobile/controllers/checkin.dart';
 import 'package:efeone_mobile/controllers/home.dart';
-import 'package:efeone_mobile/controllers/leave_application.dart';
+import 'package:efeone_mobile/controllers/leave.dart';
 import 'package:efeone_mobile/controllers/login.dart';
 import 'package:efeone_mobile/controllers/notification.dart';
 import 'package:efeone_mobile/controllers/profile.dart';
 import 'package:efeone_mobile/controllers/splash.dart';
+import 'package:efeone_mobile/controllers/task.dart';
 import 'package:efeone_mobile/controllers/timesheet.dart';
+import 'package:efeone_mobile/firebase_options.dart';
+import 'package:efeone_mobile/utilities/firebase_api.dart';
+import 'package:efeone_mobile/view/home_view.dart';
+import 'package:efeone_mobile/view/login_view.dart';
 import 'package:efeone_mobile/view/splash_view.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+final navigatorKey = GlobalKey<NavigatorState>();
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseApi().initNotifications();
   runApp(const MyApp());
 }
 
@@ -47,9 +56,20 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => TimesheetController(),
         ),
+        ChangeNotifierProvider(
+          create: (context) => ChatProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => TaskController(),
+        ),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
+        routes: {
+          "/login": (context) => Loginscreen(),
+          "/home": (context) => const Homepage(),
+        },
         title: 'efeone_mobile',
         theme: ThemeData(
             appBarTheme: AppBarTheme(backgroundColor: Colors.grey[100]),

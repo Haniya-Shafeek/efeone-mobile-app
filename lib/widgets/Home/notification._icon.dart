@@ -1,10 +1,12 @@
 import 'package:efeone_mobile/controllers/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:efeone_mobile/view/notification_view.dart';
+import 'package:efeone_mobile/view/notification_list_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 
 class NotificationStack extends StatelessWidget {
+  const NotificationStack({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -20,7 +22,8 @@ class NotificationStack extends StatelessWidget {
           },
           child: const Icon(
             Icons.notifications,
-            size: 30,
+            color: Colors.blue,
+            size: 28,
           ),
         ),
         Consumer<Notificationcontroller>(

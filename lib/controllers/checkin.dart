@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:efeone_mobile/utilities/config.dart';
+import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/view/ECP/Ecp_list_view.dart';
+import 'package:efeone_mobile/widgets/cust_snackbar.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -18,7 +20,10 @@ class CheckinPermissionProvider with ChangeNotifier {
   String? _empname;
   String? _reportsToUser;
   String? _dateValidationError;
+  List<Map<String, dynamic>> _checkinList = [];
+  String _status = 'Pending';
 
+  List<Map<String, dynamic>> get checkinData => _checkinList;
   List<Map<String, dynamic>> get ecp => _ecp;
   TimeOfDay? get selectedarrivalTime => _arrivalTime;
   String? get dateValidationError => _dateValidationError;
@@ -30,21 +35,24 @@ class CheckinPermissionProvider with ChangeNotifier {
   String? get ecpName => _ecpName;
   String? get empname => _empname;
   String? get reportsToUser => _reportsToUser;
+  String get status => _status;
 
   final formKey = GlobalKey<FormState>();
   TextEditingController reasonController = TextEditingController();
 
- @override
+  @override
   void dispose() {
     reasonController.dispose();
     super.dispose();
   }
+
   //Method to get valuess on shared preferenvce
   Future<void> loadSharedPrefs() async {
     SharedPreferences pref = await SharedPreferences.getInstance();
     _empid = pref.getString('employeeid') ?? '';
     _empname = pref.getString("fullName") ?? "";
     _logmail = pref.getString('usr') ?? '';
+    notifyListeners();
   }
 
   //Method to select date
@@ -85,7 +93,6 @@ class CheckinPermissionProvider with ChangeNotifier {
 
     if (picked != null) {
       _arrivalTime = picked;
-
       notifyListeners();
     }
   }
@@ -99,7 +106,6 @@ class CheckinPermissionProvider with ChangeNotifier {
 
     if (picked != null) {
       _leavingTime = picked;
-
       notifyListeners();
     }
   }
@@ -107,15 +113,15 @@ class CheckinPermissionProvider with ChangeNotifier {
 //Method to select log type
   void selectLogType(String logType) {
     _selectedLogType = logType;
-
     notifyListeners();
   }
 
-  //Method to post ecp
+  //Method to submit ecp
   Future<void> submitCheckinPermission({
+    required String empId,
     required String date,
     required String logType,
-    required String arraivalTime,
+    required String arrivalTime,
     required String leavingTime,
     required String reason,
     required BuildContext context,
@@ -123,13 +129,9 @@ class CheckinPermissionProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
-      final name = prefs.getString('fullName') ?? '';
       final email = prefs.getString('usr') ?? '';
-
-      final String employeeId = prefs.getString('employeeid') ?? '';
       final Map<String, dynamic> payload = {
-        'employee_id': employeeId,
-        'employee_name': name,
+        'employee': empId,
         'date': _selectedDate?.toIso8601String(),
         'log_type': _selectedLogType,
         'arrival_time': formatTimeOfDay(_arrivalTime),
@@ -150,9 +152,51 @@ class CheckinPermissionProvider with ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "ECP Posted Successfully",
+            bgColor: Colors.green);
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CheckinPermissionListScreen(),
+            ));
         print('Check-in permission submitted successfully');
       } else {
         print('Failed to submit check-in permission: ${response.body}');
+      }
+    } catch (e) {
+      print('An error occurred: $e');
+    }
+  }
+
+  //get checkin details
+  Future<void> fetchCheckin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("cookie");
+      final url =
+          '${Config.baseUrl}/api/resource/Employee%20Checkin?fields=["*"]';
+      print(url);
+      final response = await http.get(
+        Uri.parse(
+            '${Config.baseUrl}/api/resource/Employee%20Checkin?fields=["*"]&order_by=time%20desc&limit_page_length=1000'),
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          "cookie": token ?? '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        if (jsonData.containsKey('data') && jsonData['data'] is List) {
+          _checkinList = List<Map<String, dynamic>>.from(jsonData['data']);
+          notifyListeners();
+        } else {
+          print('Invalid response format');
+        }
+      } else {
+        print('Failed to fetch check-in details: ${response.body}');
       }
     } catch (e) {
       print('An error occurred: $e');
@@ -164,6 +208,9 @@ class CheckinPermissionProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
+      final url =
+          '${Config.baseUrl}/api/resource/Employee%20Checkin%20Permission?fields=["*"]&order_by=creation%20desc';
+      print(url);
       final response = await http.get(
         Uri.parse(
             '${Config.baseUrl}/api/resource/Employee%20Checkin%20Permission?fields=["*"]&order_by=date%20desc'),
@@ -181,7 +228,7 @@ class CheckinPermissionProvider with ChangeNotifier {
           print('Invalid response format');
         }
       } else {
-        print('Failed to fetch check-in permission details: ${response.body}');
+        print('Failed to F check-in permission details: ${response.body}');
       }
     } catch (e) {
       print('An error occurred: $e');
@@ -270,34 +317,17 @@ class CheckinPermissionProvider with ChangeNotifier {
 
     if (response.statusCode == 200) {
       // Success
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Center(
-            child: custom_text(
-              text: 'Successfully Updated',
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ));
+      CustomSnackbar.showSnackbar(
+          context: context,
+          message: "ECP Updated Successfully",
+          bgColor: Colors.green);
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const CheckinPermissionListScreen(),
           ));
       notifyListeners();
-      print('Ecp updated successfully');
+      print('Successfully Ecp Updated');
     } else {
       // Error handling
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -355,8 +385,8 @@ class CheckinPermissionProvider with ChangeNotifier {
         content: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green,
-            borderRadius: BorderRadius.circular(8),
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(15),
           ),
           child: const Center(
             child: custom_text(
@@ -372,11 +402,11 @@ class CheckinPermissionProvider with ChangeNotifier {
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ));
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const CheckinPermissionListScreen(),
-          ));
+      // Navigator.pushReplacement(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (context) => const CheckinPermissionListScreen(),
+      //     ));
       notifyListeners();
       print('Ecp Status updated successfully');
     } else {
@@ -408,16 +438,47 @@ class CheckinPermissionProvider with ChangeNotifier {
   }
 
   //Method to change the status
-  String _status = 'Open';
-
-  String get status => _status;
 
   void setStatus(String newStatus) {
     _status = newStatus;
     notifyListeners();
   }
 
-   void clearValues() {
+  //method to delete Employee Checkin
+  Future<void> deleteCheckin(String checkinId, BuildContext context) async {
+    final String baseUrl =
+        '${Config.baseUrl}/api/resource/Employee%20Checkin/$checkinId';
+    print(baseUrl);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("cookie");
+      final response = await http.delete(
+        Uri.parse(baseUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'cookie': '$token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "Checkin deleted Successfully",
+            bgColor: Colors.red);
+        print('Record deleted successfully');
+        notifyListeners();
+      } else {
+        print('Failed to delete record: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+//method to clear fields
+  void clearValues() {
     _arrivalTime = null;
     _leavingTime = null;
     _selectedDate = null;

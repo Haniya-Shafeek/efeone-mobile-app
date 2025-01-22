@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:efeone_mobile/view/home_view.dart';
 import 'package:efeone_mobile/utilities/config.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
@@ -8,12 +7,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class LoginController extends ChangeNotifier {
-  bool _isPasswordVisible = false;
+  bool _isPasswordVisible = true;
 
   bool get isPasswordVisible => _isPasswordVisible;
 
   set isPasswordVisible(bool value) {
     _isPasswordVisible = value;
+    notifyListeners();
+  }
+
+  String _buttonText = "LOGIN";
+  bool _isVerifying = false;
+  String get buttonText => _buttonText;
+  bool get isVerifying => _isVerifying;
+
+  void setVerifying(bool value) {
+    _isVerifying = value;
+    _buttonText = value ? "VERIFYING..." : "LOGIN";
     notifyListeners();
   }
 
@@ -52,12 +62,7 @@ class LoginController extends ChangeNotifier {
         loginPref.setBool("islogin", true);
         await getempid();
         await storeLoginTime();
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const Homepage(),
-            ),
-            (route) => false);
+        Navigator.pushNamedAndRemoveUntil(context, "/home", (route) => false);
       } else {
         print(response.body);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -87,50 +92,51 @@ class LoginController extends ChangeNotifier {
     }
   }
 
- Future<void> getempid() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString("cookie");
-  final userId = prefs.getString("usr");
+  Future<void> getempid() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("cookie");
+    final userId = prefs.getString("usr");
 
-  String url = '${Config.baseUrl}/api/resource/Employee?filters=[["user_id", "=", "$userId"]]&fields=["name", "image"]';
+    String url =
+        '${Config.baseUrl}/api/resource/Employee?filters=[["user_id", "=", "$userId"]]&fields=["name", "image"]';
 
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-        "cookie": token ?? '',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          "cookie": token ?? '',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseBody = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = json.decode(response.body);
 
-      if (responseBody.containsKey('data')) {
-        List<dynamic> data = responseBody['data'];
-        if (data.isNotEmpty) {
-          String employeeId = data[0]['name'];
-          String imgUrl = '';
-          if (data[0]['image'] != null) {
-            imgUrl = Config.baseUrl + data[0]['image'];
+        if (responseBody.containsKey('data')) {
+          List<dynamic> data = responseBody['data'];
+          if (data.isNotEmpty) {
+            String employeeId = data[0]['name'];
+            String imgUrl = '';
+            if (data[0]['image'] != null) {
+              imgUrl = Config.baseUrl + data[0]['image'];
+            }
+
+            // Save image URL and employee ID locally to avoid refetching
+            await prefs.setString('employeeid', employeeId);
+            await prefs.setString('img_url', imgUrl);
+            notifyListeners();
           }
-
-          // Save image URL and employee ID locally to avoid refetching
-          await prefs.setString('employeeid', employeeId);
-          await prefs.setString('img_url', imgUrl);
-          notifyListeners();
         }
+      } else if (response.statusCode == 403 || response.statusCode == 401) {
+        print('Image access restricted. Skipping repeated requests.');
+        // Optional: Store a flag to indicate restricted access if needed
+      } else {
+        print('Request failed: ${response.statusCode}');
       }
-    } else if (response.statusCode == 403 || response.statusCode == 401) {
-      print('Image access restricted. Skipping repeated requests.');
-      // Optional: Store a flag to indicate restricted access if needed
-    } else {
-      print('Request failed: ${response.statusCode}');
+    } catch (e) {
+      print('Exception occurred: $e');
     }
-  } catch (e) {
-    print('Exception occurred: $e');
   }
-}
 
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -141,7 +147,7 @@ class LoginController extends ChangeNotifier {
   }
 
 //function to check internet connection
-  void connectioncheck(BuildContext context) async {
+  Future<void> connectioncheck(BuildContext context) async {
     var connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,5 +187,17 @@ class LoginController extends ChangeNotifier {
     final loginpref = await SharedPreferences.getInstance();
     final loginTime = DateTime.now().toIso8601String();
     loginpref.setString("loginTime", loginTime);
+  }
+
+  Future<List<Map<String, String>>> getStoredCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('usr');
+    final password = prefs.getString('pwd');
+    if (email != null && password != null) {
+      return [
+        {'email': email, 'password': password}
+      ];
+    }
+    return [];
   }
 }

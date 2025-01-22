@@ -1,9 +1,11 @@
+import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/view/leave%20application/leavelist_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
+import 'package:efeone_mobile/widgets/custom_field.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:efeone_mobile/controllers/leave_application.dart';
+import 'package:efeone_mobile/controllers/leave.dart';
 
 class LeaveEditView extends StatefulWidget {
   final String reason;
@@ -171,11 +173,13 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                       TextButton(
                         onPressed: () {
                           controller.deleteRecord(_id, context);
-                          Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LeaveListview(),
-                              ));
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                          // Navigator.pushReplacement(
+                          //     context,
+                          //     MaterialPageRoute(
+                          //       builder: (context) => const LeaveListview(),
+                          //     ));
                         },
                         child: const custom_text(
                             text: 'Delete', color: Colors.redAccent),
@@ -210,27 +214,11 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                     fontSize: 16),
                 const SizedBox(height: 8),
                 GestureDetector(
-                  onTap: () {
-                    _onFieldClicked();
-                    _pickDate(_fromDateController, context);
-                  },
-                  child: AbsorbPointer(
-                    child: TextField(
-                      controller: _fromDateController,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 12.0,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                    onTap: () {
+                      _onFieldClicked();
+                      _pickDate(_fromDateController, context);
+                    },
+                    child: CustomField(controller: _fromDateController)),
                 if (_fromDateError != null) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -248,22 +236,7 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                     _onFieldClicked();
                     _pickDate(_toDateController, context);
                   },
-                  child: AbsorbPointer(
-                    child: TextField(
-                      controller: _toDateController,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 12.0,
-                        ),
-                      ),
-                    ),
-                  ),
+                  child: CustomField(controller: _toDateController),
                 ),
                 if (_toDateError != null) ...[
                   const SizedBox(height: 8),
@@ -302,22 +275,7 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                       _onFieldClicked();
                       _pickDate(_halfDayDateController, context);
                     },
-                    child: AbsorbPointer(
-                      child: TextField(
-                        controller: _halfDayDateController,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 12.0,
-                          ),
-                        ),
-                      ),
-                    ),
+                    child: CustomField(controller: _halfDayDateController),
                   ),
                   if (_halfDayDateError != null) ...[
                     const SizedBox(height: 8),
@@ -334,55 +292,44 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                     fontWeight: FontWeight.bold,
                     fontSize: 16),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: widget.leaveType,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  items: [
-                    "Casual Leave",
-                    "Annual Leave",
-                    "Maternity Leave",
-                    "Leave Without Pay"
-                  ].map((String type) {
-                    return DropdownMenuItem<String>(
-                      value: type,
-                      child: Text(type),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      controller.setLeaveType(newValue);
-                      _isFieldClicked = true;
-                    });
-                  },
+                  child: DropdownButtonFormField<String>(
+                    value: controller.leaveTypes.contains(widget.leaveType)
+                        ? widget.leaveType
+                        : null,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(borderSide: BorderSide.none),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 12.0,
+                      ),
+                    ),
+                    items: controller.leaveTypes.map((String type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        controller.setLeaveType(newValue);
+                        _isFieldClicked = true;
+                      });
+                    },
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const custom_text(
                     text: 'Reason', fontWeight: FontWeight.bold, fontSize: 16),
                 const SizedBox(height: 8),
-                TextField(
+                CustomField(
                   controller: _reasonController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
-                  ),
-                  maxLines: 3,
+                  maxline: 3,
                   onTap: _onFieldClicked,
                 ),
                 const SizedBox(height: 25),
@@ -391,6 +338,8 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor),
                         onPressed: () {
                           if (_validationError == null) {
                             final leaveType = widget.leaveType;
@@ -417,8 +366,7 @@ class _LeaveEditViewState extends State<LeaveEditView> {
                           }
                         },
                         child: const custom_text(
-                            text: 'Update',
-                            color: Color.fromARGB(255, 44, 74, 125)),
+                            text: 'Update', color: Colors.white),
                       ),
                     ),
                   ),

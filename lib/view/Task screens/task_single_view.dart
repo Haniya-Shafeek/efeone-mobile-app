@@ -1,4 +1,5 @@
-
+import 'package:efeone_mobile/utilities/helpers.dart';
+import 'package:efeone_mobile/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html_parser;
 
@@ -8,15 +9,24 @@ class Taskviewpage extends StatelessWidget {
   final String taskDes;
   final String taskSts;
   final String owner;
+  final String endDate;
+  final String project;
+  final String type;
+  final String parentTask;
+  final String priority;
 
-  const Taskviewpage({
-    super.key,
-    required this.taskName,
-    required this.taskSubject,
-    required this.taskDes,
-    required this.taskSts,
-    required this.owner,
-  });
+  const Taskviewpage(
+      {super.key,
+      required this.taskName,
+      required this.taskSubject,
+      required this.taskDes,
+      required this.taskSts,
+      required this.owner,
+      required this.project,
+      required this.parentTask,
+      required this.type,
+      required this.priority,
+      required this.endDate});
 
   String _removeHtmlTags(String htmlString) {
     final document = html_parser.parse(htmlString);
@@ -28,32 +38,49 @@ class Taskviewpage extends StatelessWidget {
     final plainTextDescription = _removeHtmlTags(taskDes);
 
     return Scaffold(
-      appBar: AppBar(
-        title: SizedBox(
-          width: 90,
-          child: Image.asset('assets/images/efeone Logo.png'),
-        ),
-      ),
+      appBar: const CustomAppBar(),
       backgroundColor: Colors.grey[100],
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 16),
-            _buildTaskDetail('Subject', taskSubject),
-            const SizedBox(height: 12),
-            _buildTaskDetail('Owner', owner, isOwner: true),
-            const SizedBox(height: 12),
-            _buildTaskDetail(
-                'Description',
-                plainTextDescription.isEmpty
-                    ? "No description available"
-                    : plainTextDescription),
-            const SizedBox(height: 12),
-            _buildTaskDetail('Status', taskSts, isStatus: true),
-          ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 16),
+              _buildTaskDetail('Subject', taskSubject),
+              const SizedBox(height: 12),
+              _buildTaskDetail('Assigned  By', owner, isOwner: true),
+              const SizedBox(height: 12),
+              _buildTaskDetail('Project', project),
+              const SizedBox(height: 12),
+              _buildTaskDetail('Task Type', type),
+
+              const SizedBox(height: 12),
+              _buildTaskDetail(
+                  'Description',
+                  plainTextDescription.isEmpty
+                      ? "No description available"
+                      : plainTextDescription),
+              const SizedBox(height: 12),
+              _buildTaskDetail('End Date', formatDate(endDate)),
+              const SizedBox(height: 12),
+              ...[
+                const SizedBox(height: 12),
+                _buildTaskDetail(
+                    'Priority', priority ?? "No priority assigned"),
+              ],
+              // const SizedBox(height: 12),
+              ...[
+                const SizedBox(height: 12),
+                _buildTaskDetail(
+                    'Parent Task', parentTask ?? "No parent task assigned"),
+              ],
+
+              const SizedBox(height: 12),
+              _buildTaskDetail('Status', taskSts, isStatus: true),
+            ],
+          ),
         ),
       ),
     );
@@ -122,23 +149,12 @@ class Taskviewpage extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             if (isOwner) ...[
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 18, // Slightly smaller radius for less height
-                    backgroundImage: AssetImage("assets/images/empavatar.jpg"),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      content,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                content,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
               ),
             ] else if (isStatus) ...[
               Text(

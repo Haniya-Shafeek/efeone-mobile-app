@@ -1,7 +1,10 @@
 import 'package:efeone_mobile/controllers/home.dart';
+import 'package:efeone_mobile/controllers/task.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
+import 'package:efeone_mobile/view/search_view.dart';
 import 'package:efeone_mobile/view/todo_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
+import 'package:efeone_mobile/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,22 +13,12 @@ class TodoListview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final homepageController =
-        Provider.of<HomepageController>(context, listen: false);
+    final controller = Provider.of<TaskController>(context, listen: false);
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Align(
-          alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: screenWidth * 0.2,
-            child: Image.asset('assets/images/efeone Logo.png'),
-          ),
-        ),
-        centerTitle: true,
-      ),
+      appBar: CustomAppBar(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -47,32 +40,45 @@ class TodoListview extends StatelessWidget {
                 vertical: MediaQuery.of(context).size.height * 0.02,
               ),
               child: FutureBuilder(
-                future: homepageController
-                    .fetchTodo(), // Calling the fetchTodo method
+                future: controller.fetchTodo(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    // While the future is still running, show a loading indicator
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: primaryColor,
-                      ),
+                    return ListView.builder(
+                      itemCount: 8,
+                      padding: const EdgeInsets.all(16),
+                      itemBuilder: (context, index) {
+                        return Card(
+                          child: ListTile(
+                            title: Container(
+                              height: 16,
+                              color: Colors.grey[300],
+                            ),
+                            subtitle: Container(
+                              height: 12,
+                              color: Colors.grey[300],
+                            ),
+                            trailing: Container(
+                              width: 40,
+                              height: 40,
+                              color: Colors.grey[300],
+                            ),
+                          ),
+                        );
+                      },
                     );
                   } else if (snapshot.hasError) {
-                    // If there was an error, display an error message
                     return Center(
                       child: Text('Error: ${snapshot.error}'),
                     );
-                  } else if (homepageController.todotype.isEmpty) {
-                    // If no todos were fetched, show a placeholder message
+                  } else if (controller.todotype.isEmpty) {
                     return const Center(
                       child: Text('No todos available.'),
                     );
                   } else {
-                    // When data is fetched successfully, display the list
                     return ListView.builder(
-                      itemCount: homepageController.todotype.length,
+                      itemCount: controller.todotype.length,
                       itemBuilder: (context, index) {
-                        if (homepageController.todosts[index].toLowerCase() ==
+                        if (controller.todosts[index].toLowerCase() ==
                             'cancelled') {
                           return const SizedBox.shrink();
                         }
@@ -82,20 +88,19 @@ class TodoListview extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => Todoview(
-                                  name: homepageController.todoname[index],
-                                  description:
-                                      homepageController.tododes[index],
-                                  status: homepageController.todosts[index],
-                                  type: homepageController.todotype[index],
-                                  assigned: homepageController.todoassgn[index],
-                                  modified:
-                                      homepageController.todomodify[index],
-                                  date: homepageController.tododate[index],
+                                  name: controller.todoname[index],
+                                  description: controller.tododes[index],
+                                  status: controller.todosts[index],
+                                  type: controller.todotype[index],
+                                  assigned: controller.todoassgn[index],
+                                  modified: controller.todomodify[index],
+                                  date: controller.tododate[index],
                                 ),
                               ),
                             );
                           },
                           child: Card(
+                            color: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -119,26 +124,16 @@ class TodoListview extends StatelessWidget {
                                   Expanded(
                                     flex: 2,
                                     child: custom_text(
-                                      text: homepageController.todotype[index],
+                                      text: controller.tododes[index],
                                       color: Colors.black,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w600,
                                       fontSize: 13,
-                                    ),
-                                  ),
-
-                                  // Description
-                                  Expanded(
-                                    flex: 2,
-                                    child: custom_text(
-                                      text: homepageController.todoname[index],
-                                      color: Colors.grey[700],
-                                      fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                   // Status
                                   Expanded(
-                                    flex: 2,
+                                    flex: 1,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 5,
@@ -149,7 +144,7 @@ class TodoListview extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: custom_text(
-                                        text: homepageController.todosts[index],
+                                        text: controller.todosts[index],
                                         color: Colors.grey,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,

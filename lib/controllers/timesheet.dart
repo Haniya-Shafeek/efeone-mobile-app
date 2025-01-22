@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_edit.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_list_view.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheetRowAdd_view.dart';
-import 'package:efeone_mobile/widgets/cust_text.dart';
+import 'package:efeone_mobile/view/Time%20Sheet/timesheet_row_edit.dart';
+import 'package:efeone_mobile/widgets/cust_snackbar.dart';
 import 'package:http/http.dart' as http;
 import 'package:efeone_mobile/utilities/config.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class TimesheetController extends ChangeNotifier {
   String? _empid;
   String? _empname;
+  String? _usr;
   List<Map<String, dynamic>> _timesheet = [];
   List<dynamic> _activityType = [];
   List<dynamic> _projects = [];
@@ -28,6 +29,7 @@ class TimesheetController extends ChangeNotifier {
   bool isDataFetched = false;
 
   String? get empid => _empid;
+  String? get usr => _usr;
   String? get empname => _empname;
   String? get postingDate => _postingDate();
   List<Map<String, dynamic>> get timesheet => _timesheet;
@@ -52,6 +54,7 @@ class TimesheetController extends ChangeNotifier {
     _empid = prefs.getString('employeeid') ?? '';
     employeeNameController.text = prefs.getString('fullName') ?? '';
     _empname = prefs.getString('fullName') ?? '';
+    _usr = prefs.getString('usr');
     notifyListeners();
   }
 
@@ -62,7 +65,7 @@ class TimesheetController extends ChangeNotifier {
       final token = prefs.getString("cookie");
       // final String employeeId = prefs.getString('employeeid') ?? '';
       final url = Uri.parse(
-          '${Config.baseUrl}/api/resource/Timesheet?fields=["*"]&order_by=creation%20desc');
+          '${Config.baseUrl}/api/resource/Timesheet?fields=["*"]&order_by=creation%20desc?limit_page_length=1000');
       print(url);
       final response = await http.get(
         Uri.parse(
@@ -90,7 +93,7 @@ class TimesheetController extends ChangeNotifier {
     }
   }
 
-//Method to fetch singletimesheet
+  //Method to fetch singletimesheet
   Future<void> fetchSingleTimesheetDetails(String timesheetId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -133,7 +136,6 @@ class TimesheetController extends ChangeNotifier {
   Future<Map<String, dynamic>> fetchTimesheetData(String timesheetId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("cookie");
-
     final url = '${Config.baseUrl}/api/resource/Timesheet/$timesheetId';
     print(url);
     try {
@@ -147,8 +149,7 @@ class TimesheetController extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Assuming you want to return the 'data' field from the response
-        return data['data']; // Return the 'data' object directly
+        return data['data'];
       } else {
         throw Exception('Failed to load timesheet data: ${response.body}');
       }
@@ -196,27 +197,10 @@ class TimesheetController extends ChangeNotifier {
         final timesheetName = responseData['data']['name'];
         Provider.of<TimesheetController>(context, listen: false)
             .setTimesheetName(timesheetName);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: custom_text(
-                text: 'Successly Posted',
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ));
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "Timesheet Posted Successfully",
+            bgColor: Colors.green);
 
         print('Timesheet created successfully: ${response.body}');
       } else {
@@ -225,8 +209,8 @@ class TimesheetController extends ChangeNotifier {
       }
     } catch (error) {
       print('An error occurred: $error');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $error'),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to save timesheet'),
         backgroundColor: Colors.red,
       ));
     }
@@ -256,29 +240,12 @@ class TimesheetController extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         // Success handling
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: custom_text(
-                text: 'Timesheet submitted successfully',
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ));
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "Timesheet Submitted Successfully",
+            bgColor: Colors.green);
 
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const TimesheetListviewScreen(),
@@ -290,21 +257,22 @@ class TimesheetController extends ChangeNotifier {
       }
     } catch (error) {
       print('An error occurred: $error');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('An error occurred: $error'),
+      print('An error occurred: $error');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to submit timesheet'),
         backgroundColor: Colors.red,
       ));
     }
   }
 
-//Method To update the timesheet
+  //Method To update the timesheet
   Future<bool> updateTimesheet(String timesheetId, Map<String, dynamic> data,
       BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
-      final url =
-          "${Config.baseUrl}/api/resource/Timesheet/$timesheetId"; // Replace with actual endpoint
+      final url = "${Config.baseUrl}/api/resource/Timesheet/$timesheetId";
+      print(url); // Replace with actual endpoint
       final response = await http.put(
         Uri.parse(url),
         headers: {
@@ -316,39 +284,203 @@ class TimesheetController extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         // Optionally, parse the response data if needed
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: custom_text(
-                text: 'Timesheet updated successfully',
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ));
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "Timesheet Updated Successfully",
+            bgColor: Colors.green);
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => const TimesheetRowEditscreen(),
+        //   ),
+        // );
 
-        Navigator.pop(context, true);
         notifyListeners();
         return true;
       } else {
-        // Log or handle errors
         print("Failed to update timesheet: ${response.body}");
         return false;
       }
     } catch (error) {
       print("Error updating timesheet: $error");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to update timesheet'),
+        backgroundColor: Colors.red,
+      ));
       return false;
+    }
+  }
+
+  // Function to update timesheet row
+  Future<bool> updateTimesheetRow(String timesheetId, String rowId,
+      Map<String, dynamic> updatedData, BuildContext context) async {
+    final String endpoint =
+        "/api/resource/Timesheet/$timesheetId"; // URL to your timesheet endpoint
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("cookie");
+
+    try {
+      // Step 1: Fetch the existing timesheet data
+      final fetchResponse = await http.get(
+        Uri.parse(Config.baseUrl + endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          "cookie": token ?? '',
+        },
+      );
+
+      if (fetchResponse.statusCode != 200) {
+        print('Failed to fetch timesheet data: ${fetchResponse.body}');
+        return false;
+      }
+
+      final existingData = json.decode(fetchResponse.body);
+      final List<dynamic> timeLogs = existingData['data']['time_logs'] ?? [];
+
+      // Step 2: Update the specific row in the time_logs list
+      final updatedTimeLogs = timeLogs.map((log) {
+        if (log['name'] == rowId) {
+          return {
+            ...log,
+            ...updatedData,
+          };
+        }
+        return log;
+      }).toList();
+
+      // Step 3: Send the updated list back to the server
+      final updateResponse = await http.put(
+        Uri.parse(Config.baseUrl + endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          "cookie": token ?? '',
+        },
+        body: json.encode({
+          'time_logs': updatedTimeLogs,
+        }),
+      );
+
+      if (updateResponse.statusCode == 200) {
+        print('Timesheet row updated successfully');
+        CustomSnackbar.showSnackbar(
+            context: context,
+            message: "Timesheet Updated Successfully",
+            bgColor: Colors.green);
+        notifyListeners();
+        return true;
+      } else {
+        print('Failed to update timesheet row: ${updateResponse.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error updating timesheet row: $e');
+      return false;
+    }
+  }
+
+  //method to delete the row
+  Future<bool> deleteTimesheetRow(
+    String timesheetId,
+    String rowId,
+    BuildContext context,
+  ) async {
+    final String endpoint =
+        "/api/resource/Timesheet/$timesheetId"; // The endpoint to update the timesheet
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString("cookie");
+
+    try {
+      // Step 1: Fetch the existing timesheet data
+      final fetchResponse = await http.get(
+        Uri.parse(Config.baseUrl + endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          "cookie": token ?? '',
+        },
+      );
+
+      if (fetchResponse.statusCode != 200) {
+        print('Failed to fetch timesheet data: ${fetchResponse.body}');
+        return false;
+      }
+
+      final existingData = json.decode(fetchResponse.body);
+      final List<dynamic> timeLogs = existingData['data']['time_logs'] ?? [];
+
+      // Step 2: Remove the specific row from the time_logs list
+      final updatedTimeLogs = timeLogs.where((log) {
+        return log['name'] != rowId; // Filter out the row you want to delete
+      }).toList();
+
+      // Step 3: Send the updated list back to the server
+      final updateResponse = await http.put(
+        Uri.parse(Config.baseUrl + endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          "cookie": token ?? '',
+        },
+        body: json.encode({
+          'time_logs': updatedTimeLogs,
+        }),
+      );
+
+      if (updateResponse.statusCode == 200) {
+        print('Timesheet row deleted successfully');
+        CustomSnackbar.showSnackbar(
+          context: context,
+          message: "Row Deleted Successfully",
+          bgColor: Colors.green,
+        );
+        return true;
+      } else {
+        print('Failed to delete timesheet row: ${updateResponse.body}');
+        CustomSnackbar.showSnackbar(
+          context: context,
+          message:
+              "Failed to delete row: ${json.decode(updateResponse.body)['message']}",
+          bgColor: Colors.red,
+        );
+        return false;
+      }
+    } catch (e) {
+      print('Error deleting timesheet row: $e');
+      return false;
+    }
+  }
+
+  /// Update the start date of a timesheet
+  Future<void> updateStartDate(
+      String timesheetId, String newStartDate, BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("cookie");
+      final url =
+          Uri.parse("${Config.baseUrl}/api/resource/Timesheet/$timesheetId");
+      final data = {
+        "start_date": newStartDate,
+      };
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "cookie": token ?? '',
+        },
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        // Refresh the details after a successful update
+        await fetchSingleTimesheetDetails(timesheetId);
+      } else {
+        print(response.body);
+      }
+    } catch (e) {
+      print("failed to update date $e");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to update date'),
+        backgroundColor: Colors.red,
+      ));
     }
   }
 
@@ -394,7 +526,7 @@ class TimesheetController extends ChangeNotifier {
   }
 
   //Method to delete timesheet
-  Future<void> deleteTimesheet(String timesheetId) async {
+  Future<void> deleteTimesheet(String timesheetId, BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
@@ -409,13 +541,18 @@ class TimesheetController extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
+        Navigator.pop(context);
         print("Successfully deleted");
       } else {
         throw Exception('Failed to load timesheet data ${response.body}');
       }
     } catch (error) {
       print('Error fetching timesheet data: $error');
-      // Handle the error accordingly
+      print('An error occurred: $error');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Failed to delete timesheet'),
+        backgroundColor: Colors.red,
+      ));
     }
   }
 
@@ -463,14 +600,41 @@ class TimesheetController extends ChangeNotifier {
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'] as List<dynamic>;
-        _activityType = (data
-            .map((item) => item as Map<String, dynamic>)
-            .toList()
-          ..sort(
-              (a, b) => (a['name'] as String).compareTo(b['name'] as String)));
+
+        // Define the list of items to prioritize
+        List<String> prioritizedItems = [
+          "Client Meeting",
+          "Daily Meeting",
+          "Development",
+          "Documentation Reading",
+          "ERPNext Documentation",
+          "Live Support",
+          "Support",
+          "Team Meeting"
+        ];
+
+        // Map the fetched data into a list of strings (names of activities)
+        List<Map<String, dynamic>> activityList =
+            data.map((item) => item as Map<String, dynamic>).toList();
+
+        // Sort the list based on priority
+        activityList.sort((a, b) {
+          bool aIsPrioritized = prioritizedItems.contains(a['name']);
+          bool bIsPrioritized = prioritizedItems.contains(b['name']);
+
+          if (aIsPrioritized && !bIsPrioritized) {
+            return -1; // a should come first
+          } else if (!aIsPrioritized && bIsPrioritized) {
+            return 1; // b should come first
+          }
+          return (a['name'] as String).compareTo(b['name']
+              as String); // Sort alphabetically if both are prioritized or neither
+        });
+
+        _activityType = activityList;
         notifyListeners();
       } else {
-        throw Exception('Failed to load projectname data ${response.body}');
+        throw Exception('Failed to load activity type data ${response.body}');
       }
     } catch (error) {
       print('Error fetching data: $error');
@@ -631,7 +795,6 @@ class TimesheetController extends ChangeNotifier {
 
   // Method To add empty row
   void addEmptyLog(BuildContext context) {
-    print('row add called');
     timeLogs!.add({
       'index': timeLogs!.length + 1,
       'activity_type': '',
@@ -651,7 +814,21 @@ class TimesheetController extends ChangeNotifier {
         icon: const Icon(Icons.edit, color: Colors.grey),
       ),
     });
-    notifyListeners(); // Notify the UI to rebuild with the new row
+    notifyListeners();
+  }
+
+  bool _isSaveButton = true;
+
+  bool get isSaveButton => _isSaveButton;
+
+  void toggleButton() {
+    _isSaveButton = false;
+    notifyListeners();
+  }
+
+  void setIsSaved(bool value) {
+    _isSaved = value;
+    notifyListeners(); // Notify listeners about the change
   }
 
   bool _isSaved = false;
@@ -680,16 +857,20 @@ class TimesheetController extends ChangeNotifier {
 
   void updateTimeLog(int index, dynamic updatedLog) {
     timeLogs![index] = updatedLog;
-    notifyListeners(); // Notify the UI to rebuild
+    notifyListeners();
   }
+
+  // Method to add an empty time log
   void addEmptyLogtimelog(BuildContext context) {
-    timeLogs!.add({
+    final emptyLog = {
       'activity_type': '',
       'from_time': '',
       'to_time': '',
-      'hours': 0,
+      'hours': 0.0,
       'project': '',
-    });
-    notifyListeners(); // This will notify the UI to rebuild
+    };
+
+    timesheetDetail!['time_logs'].add(emptyLog);
+    notifyListeners(); // Notify listeners to update UI
   }
 }

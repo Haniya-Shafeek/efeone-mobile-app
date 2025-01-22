@@ -11,9 +11,9 @@ class Notificationcontroller extends ChangeNotifier {
   List<String> _notsub = [];
   List<String> _notread = [];
   List<String> _notname = [];
-
   int _unreadCount = 0;
   List<String> _nottype = [];
+
   //Getters notification
   List<String> get taskname => _taskname;
   List<String> get notassaign => _notassaign;
@@ -35,6 +35,7 @@ class Notificationcontroller extends ChangeNotifier {
 
     final url =
         '${Config.baseUrl}/api/resource/Notification%20Log?fields=["*"]&order_by=creation desc';
+    print(url);
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -78,9 +79,10 @@ class Notificationcontroller extends ChangeNotifier {
     }
   }
 
-// Get the count of notifications
+  // Get the count of notifications
   int get notificationCount => _notread.length;
-  //to mark notific
+
+  //to mark notification as read
   Future<void> notificationRead(String notificationId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('cookie');
@@ -97,7 +99,7 @@ class Notificationcontroller extends ChangeNotifier {
       );
       if (response.statusCode == 200) {
         print("successly marked");
-        notifyListeners(); // Notify listeners of state change
+        notifyListeners();
       } else {
         throw Exception('Failed to mark notification as read');
       }

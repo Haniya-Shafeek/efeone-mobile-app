@@ -21,10 +21,9 @@ class MyDropdownFormField extends StatelessWidget {
       selectedItem: selectedValue,
       dropdownDecoratorProps: DropDownDecoratorProps(
         dropdownSearchDecoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.grey[200],
+          
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            
             borderSide: BorderSide.none,
           ),
         ),

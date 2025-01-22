@@ -1,5 +1,3 @@
-import 'package:efeone_mobile/view/home_view.dart';
-import 'package:efeone_mobile/view/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,12 +14,7 @@ class Splashcontroller extends ChangeNotifier {
 
       if (difference.inHours >= 12) {
         // More than 24 hours have passed, navigate to the login screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Loginscreen(),
-          ),
-        );
+        Navigator.pushReplacementNamed(context, "/login");
         return;
       }
     }
@@ -30,24 +23,14 @@ class Splashcontroller extends ChangeNotifier {
       // Check if 24 hours have passed since the last login
 
       // Less than 24 hours have passed, navigate to the home screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const Homepage(),
-        ),
-      );
+      Navigator.pushReplacementNamed(context, "/home");
     } else {
       // Token is not present or the user is not logged in, navigate to the login screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Loginscreen(),
-        ),
-      );
+      Navigator.pushReplacementNamed(context, "/login");
     }
   }
-   bool _isScaled = false;
 
+  bool _isScaled = false;
   bool get isScaled => _isScaled;
 
   void startAnimation() {

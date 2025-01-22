@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "226841705968",
+    "project_id": "efeone-mobile",
+    "storage_bucket": "efeone-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226841705968:android:085da6b0c5182df669f135",
+        "android_client_info": {
+          "package_name": "com.efeone_mobile.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuRweNMK_bWeZ18IlvY4ODl2LtZZh38hI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
