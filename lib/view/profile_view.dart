@@ -1,5 +1,6 @@
 import 'package:efeone_mobile/controllers/profile.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
+import 'package:efeone_mobile/utilities/helpers.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,10 @@ class _ProfilePageState extends State<ProfilePage> {
               future: _getProfileDetails(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: primaryColor,));
+                  return const Center(
+                      child: CircularProgressIndicator(
+                    color: primaryColor,
+                  ));
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (snapshot.hasData) {
@@ -95,20 +99,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           'Employee ID: ', profileDetails['id']!),
                       _buildProfileInfoRow('Email: ', profileDetails['email']!),
                       _buildProfileInfoRow(
-                          'Date of Birth: ', profileDetails['dob']!),
+                          'Date of Birth: ', formatDate(profileDetails['dob'])),
                       _buildProfileInfoRow(
                           'Designation: ', profileDetails['designation']!),
                       _buildProfileInfoRow('Date of Joining: ',
-                          profileDetails['dateOfJoining']!),
+                          formatDate(profileDetails['dateOfJoining'])),
                       const Spacer(),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.logout,
-                            color: secondayColor,
-                            size: 30,
-                          ),
-                          TextButton(
+                          TextButton.icon(
                             onPressed: () {
                               showDialog(
                                 context: context,
@@ -133,7 +133,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                         color: Colors.white70,
                                       ),
                                     ),
-                                    
                                     actions: <Widget>[
                                       TextButton(
                                         onPressed: () {
@@ -166,7 +165,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                 },
                               );
                             },
-                            child: const Text(
+                            icon: const Icon(
+                              Icons.logout,
+                              color: secondayColor,
+                              size: 30,
+                            ),
+                            label: const Text(
                               "LOG OUT",
                               style: TextStyle(
                                 color: Colors.black,

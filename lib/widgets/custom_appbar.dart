@@ -21,16 +21,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
+            Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const SearchScreen()),
-              (route) =>
-                  route.isFirst, 
+              // (route) =>
+              //     route.isFirst,
             );
           },
           icon: const Icon(
             Icons.search,
-            color: Colors.blue,
+            color: Color.fromARGB(255, 2, 51, 91),
             size: 28,
           ),
         ),

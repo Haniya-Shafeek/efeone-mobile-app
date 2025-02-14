@@ -1,5 +1,6 @@
 import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/utilities/helpers.dart';
+import 'package:efeone_mobile/view/Time%20Sheet/timesheet_edit.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -26,15 +27,48 @@ class TimesheetDetailScreen extends StatelessWidget {
           child: Image.asset('assets/images/efeone Logo.png'),
         ),
         actions: [
-          if (provider.timesheetData != null &&
-              provider.timesheetData!['status'] ==
-                  'Draft') // Check if status is 'Draft'
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                _showDeleteConfirmationDialog(context, provider);
-              },
-            ),
+          FutureBuilder<Map<String, dynamic>>(
+            future: provider.fetchTimesheetData(tsname),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting ||
+                  snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data == null) {
+                return const SizedBox(); // Return an empty widget if data is not available
+              }
+
+              final data = snapshot.data!;
+              final String status = data['status'] ?? '';
+              if (status.toLowerCase() != 'draft') {
+                return const SizedBox(); // Hide button if status is not "Draft"
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 15),
+                child: TextButton(
+                  child: const custom_text(
+                    text: 'Edit',
+                    color: Color.fromARGB(255, 2, 51, 91),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TimesheetEditViewScreen(
+                          timesheetId: tsname,
+                          review: data['end_of_the_day_review'],
+                          plan: data['tomorrows_plan'],
+                          startdate: data['start_date'],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(

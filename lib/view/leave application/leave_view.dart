@@ -47,7 +47,7 @@ class _LeaveViewState extends State<LeaveView> {
     provider.loadSharedPrefs();
 
     return Scaffold(
-      appBar: CustomAppBar(),
+      appBar: const CustomAppBar(),
       backgroundColor: Colors.grey[50],
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
@@ -175,7 +175,7 @@ class _LeaveViewState extends State<LeaveView> {
       children: [
         Expanded(
           child: custom_text(
-            text: "$label:",
+            text: "$label  :",
             fontSize: 16,
             fontWeight: fontWeight,
             color: primaryColor,

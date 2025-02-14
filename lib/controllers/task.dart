@@ -25,18 +25,19 @@ class TaskController extends ChangeNotifier {
   List<String> _openTaskpriority = [];
   List<String> _openTasktype = [];
   List<String> _openTaskpartask = [];
+ List<String> _openTaskcreation = [];
 
- List<String> _completeTaskNames = [];
-  List<String>  _completeTaskendDate = [];
+  List<String> _completeTaskNames = [];
+  List<String> _completeTaskendDate = [];
   List<String> _completeTaskOwner = [];
-  List<String>   _completeTaskdes = [];
-  List<String>  _completeTaskSub= [];
-  List<String>  _completeTaskSts = [];
-  List<String>  _completeproject = [];
+  List<String> _completeTaskdes = [];
+  List<String> _completeTaskSub = [];
+  List<String> _completeTaskSts = [];
+  List<String> _completeproject = [];
   List<String> _completeTasktype = [];
   List<String> _completeTaskpriority = [];
-  List<String>  _completeTaskpartask = [];
-
+  List<String> _completeTaskpartask = [];
+  List<String> _completeTaskcreation = [];
 
   List<String> _workingTaskNames = [];
   List<String> _workingTaskendDate = [];
@@ -48,6 +49,7 @@ class TaskController extends ChangeNotifier {
   List<String> _workingpriority = [];
   List<String> _workingtype = [];
   List<String> _workingpartask = [];
+  List<String> _workingTaskcreation = [];
 
   List<String> _pendingReviewTaskNames = [];
   List<String> _pendingReviewTaskSub = [];
@@ -59,6 +61,7 @@ class TaskController extends ChangeNotifier {
   final List<String> _pendingpriority = [];
   List<String> _pendingtype = [];
   List<String> _pendingpartask = [];
+  List<String> _pendingTaskcreation = [];
 
   List<String> _overdueTaskNames = [];
   List<String> _overdueTaskSub = [];
@@ -70,6 +73,7 @@ class TaskController extends ChangeNotifier {
   List<String> _overduekpriority = [];
   List<String> _overduetype = [];
   List<String> _overduepartask = [];
+  List<String> _overdueTaskcreation = [];
 
   //Todo
   List<String> _todoname = [];
@@ -99,8 +103,9 @@ class TaskController extends ChangeNotifier {
   List<String> get openTasktype => _openTasktype;
   List<String> get openTaskpriority => _openTaskpriority;
   List<String> get openTaskpartask => _openTaskpartask;
-  
-List<String> get completeTaskNames => _completeTaskNames;
+  List<String> get openTaskcreation => _openTaskcreation;
+
+  List<String> get completeTaskNames => _completeTaskNames;
   List<String> get completeTaskendDate => _completeTaskendDate;
   List<String> get completeTaskSub => _completeTaskSub;
   List<String> get completeTaskSts => _completeTaskSts;
@@ -110,6 +115,7 @@ List<String> get completeTaskNames => _completeTaskNames;
   List<String> get completeTasktype => _completeTasktype;
   List<String> get completeTaskpriority => _completeTaskpriority;
   List<String> get completeTaskpartask => _completeTaskpartask;
+  List<String> get completeTaskcreation => _completeTaskcreation;
 
   List<String> get workingTaskNames => _workingTaskNames;
   List<String> get workingTaskSub => _workingTaskSub;
@@ -121,6 +127,7 @@ List<String> get completeTaskNames => _completeTaskNames;
   List<String> get workingtasktype => _workingtype;
   List<String> get workingtaskpriority => _workingpriority;
   List<String> get workingtaskpartask => _workingpartask;
+  List<String> get workingTaskcreation => _workingTaskcreation;
 
   List<String> get pendingReviewTaskNames => _pendingReviewTaskNames;
   List<String> get pendindTaskendDate => _pendingReviewenddate;
@@ -132,6 +139,7 @@ List<String> get completeTaskNames => _completeTaskNames;
   List<String> get pendingtype => _pendingtype;
   List<String> get pendingpriority => _pendingpriority;
   List<String> get pendingpartask => _pendingpartask;
+  List<String> get pendingTaskcreation => _pendingTaskcreation;
 
   List<String> get overdueTaskNames => _overdueTaskNames;
   List<String> get overdueTaskSub => _overdueTaskSub;
@@ -143,6 +151,7 @@ List<String> get completeTaskNames => _completeTaskNames;
   List<String> get overduetype => _overduetype;
   List<String> get overduepriority => _overduekpriority;
   List<String> get overduepartask => _overduepartask;
+  List<String> get overdueTaskcreation => _overdueTaskcreation;
 
   //Getters Todo
   List<String> get todoname => _todoname;
@@ -172,9 +181,11 @@ List<String> get completeTaskNames => _completeTaskNames;
   Future<void> fetchTask(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('cookie');
-    final user = prefs.getString('usr');
+    final user = prefs.getString('usr')??"".toLowerCase();
     final url =
         '${Config.baseUrl}/api/resource/Task?fields=["name","creation","subject","description","status","exp_start_date","owner","act_end_date","project","parent_task","type","priority"]&filters=[["_assign", "like", "%$user%"]]&order_by=creation%20desc';
+    print(' url : $url');
+
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -183,9 +194,12 @@ List<String> get completeTaskNames => _completeTaskNames;
           'cookie': token.toString(),
         },
       );
+      print('response  $response');
 
       if (response.statusCode == 200) {
+        print(response.body);
         List<dynamic> tasks = jsonDecode(response.body)['data'];
+        print(tasks);
         DateFormat formatter = DateFormat('MMM dd, yyyy');
 
         _taskname = tasks.map((task) => task['name'].toString()).toList();
@@ -249,8 +263,13 @@ List<String> get completeTaskNames => _completeTaskNames;
             .map((task) =>
                 task['parent_task']?.toString() ?? "No parent task assigned")
             .toList();
+            _openTaskcreation = tasks
+            .where((task) => task['status'] == 'Open')
+            .map((task) =>
+                task['creation']?.toString() ?? "")
+            .toList();
 
-            //Completed task
+        //Completed task
         _completeTaskNames = tasks
             .where((task) => task['status'] == 'Completed')
             .map((task) => task['name'].toString())
@@ -294,6 +313,11 @@ List<String> get completeTaskNames => _completeTaskNames;
             .map((task) =>
                 task['parent_task']?.toString() ?? "No parent task assigned")
             .toList();
+            _completeTaskcreation = tasks
+            .where((task) => task['status'] == 'Completed')
+            .map((task) =>
+                task['craetion']?.toString() ?? "")
+            .toList();
 
         // Working tasks
         _workingTaskNames = tasks
@@ -336,6 +360,10 @@ List<String> get completeTaskNames => _completeTaskNames;
             .where((task) => task['status'] == 'Working')
             .map((task) => task['parent_task'].toString())
             .toList();
+            _workingTaskcreation = tasks
+            .where((task) => task['status'] == 'Working')
+            .map((task) => task['creation'].toString())
+            .toList();
 
         // Pending review tasks
         _pendingReviewTaskNames = tasks
@@ -376,6 +404,11 @@ List<String> get completeTaskNames => _completeTaskNames;
             .where((task) => task['status'] == 'Pending Review')
             .map((task) => task['priority'].toString())
             .toList();
+          _pendingTaskcreation = tasks
+            .where((task) => task['status'] == 'Pending Review')
+            .map((task) => task['creation'].toString())
+            .toList();
+
         _openTaskpartask = tasks
             .where((task) => task['status'] == 'Pending Review')
             .map((task) => task['parent_task'].toString())
@@ -422,6 +455,10 @@ List<String> get completeTaskNames => _completeTaskNames;
             .where((task) => task['status'] == 'Overdue')
             .map((task) => task['parent_task'].toString())
             .toList();
+            _overdueTaskcreation = tasks
+            .where((task) => task['status'] == 'Overdue')
+            .map((task) => task['creation'].toString())
+            .toList();
 
         // Calculate the task counts
         _totalTasksCount = tasks.length;
@@ -465,7 +502,7 @@ List<String> get completeTaskNames => _completeTaskNames;
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('cookie');
     final url =
-        '${Config.baseUrl}/api/resource/ToDo?fields=["*"]';
+        '${Config.baseUrl}/api/resource/ToDo?fields=["*"]&order_by=date%20desc';
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -476,35 +513,38 @@ List<String> get completeTaskNames => _completeTaskNames;
       );
 
       if (response.statusCode == 200) {
-        print(response.body);
+        print("Response Body: ${response.body}");
         final data = jsonDecode(response.body);
 
         List<dynamic> todos = data['data'];
         DateFormat formatter = DateFormat('MMM dd, yyyy');
 
-        _todoname = todos.map((todo) => todo['name'] as String).toList();
-        _tododes = todos.map((todo) => todo["description"] as String).toList();
-        _todosts = todos.map((todo) => todo["status"] as String).toList();
-        _todomodify =
-            todos.map((todo) => todo["modified_by"] as String).toList();
-        _tododate = todos
-            .map((todo) {
-              if (todo["date"] != null) {
-                DateTime date = DateTime.parse(todo["date"]);
-                return formatter.format(date);
-              } else {
-                return null; // Handle the null case as you prefer
-              }
-            })
-            .where((date) => date != null)
-            .cast<String>()
-            .toList();
-        _todoassgn = todos
-            .map((todo) => todo["assigned_by_full_name"] as String)
-            .toList();
+        // Clear previous data
+        _todoname = [];
+        _tododes = [];
+        _todosts = [];
+        _todomodify = [];
+        _tododate = [];
+        _todoassgn = [];
+        _todotype = [];
 
-        _todotype =
-            todos.map((todo) => todo["reference_type"] as String).toList();
+        for (var todo in todos) {
+          _todoname.add(todo['name'] ?? "No Name");
+          _tododes.add(todo["description"] ?? "No Description");
+          _todosts.add(todo["status"] ?? "Unknown");
+          _todomodify.add(todo["modified_by"] ?? "Unknown");
+          _todoassgn.add(todo["assigned_by_full_name"] ?? "Unknown");
+          _todotype.add(todo["reference_type"] ?? "Unknown");
+
+          // Handle null date safely
+          if (todo["date"] != null) {
+            DateTime date = DateTime.parse(todo["date"]);
+            _tododate.add(formatter.format(date));
+          } else {
+            _tododate.add("No Date");
+          }
+        }
+
         notifyListeners();
       } else {
         throw Exception('Failed to load ToDo names');

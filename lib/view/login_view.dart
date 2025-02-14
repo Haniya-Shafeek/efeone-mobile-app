@@ -16,6 +16,7 @@ class _LoginscreenState extends State<Loginscreen> {
 
   final TextEditingController passwordController = TextEditingController();
   bool isLoggingIn = false;
+  bool _isPasswordVisible = false; // Default state: obscured
 
   final _formKey = GlobalKey<FormState>();
 
@@ -116,8 +117,9 @@ class _LoginscreenState extends State<Loginscreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TextFormField(
+                        controller: passwordController,
+                        obscureText: !_isPasswordVisible, // Defaultly true
                         validator: (value) {
-                          // Password validation
                           if (value == null || value.isEmpty) {
                             return 'Please enter your password';
                           } else if (value.length < 6) {
@@ -125,22 +127,21 @@ class _LoginscreenState extends State<Loginscreen> {
                           }
                           return null;
                         },
-                        controller: passwordController,
-                        obscureText: !loginController.isPasswordVisible,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock,
                               color: Color.fromARGB(255, 6, 79, 138)),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              loginController.isPasswordVisible
+                              _isPasswordVisible
                                   ? Icons.visibility
                                   : Icons.visibility_off,
-                              color: Colors.blue,
+                              color: const Color.fromARGB(255, 6, 79, 138),
                             ),
                             onPressed: () {
-                              loginController.isPasswordVisible =
-                                  !loginController.isPasswordVisible;
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
                             },
                           ),
                           border: InputBorder.none,

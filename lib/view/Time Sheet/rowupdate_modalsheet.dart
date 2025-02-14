@@ -339,6 +339,7 @@ class _TsEditviewState extends State<TimesheetRowupdateviewSheet> {
     };
 
     await provider.updateTimesheet(widget.timesheetId, updatedData, context);
+    provider.isPosted = false;
     Navigator.pop(context);
     provider.fetchSingleTimesheetDetails(widget.timesheetId);
   }

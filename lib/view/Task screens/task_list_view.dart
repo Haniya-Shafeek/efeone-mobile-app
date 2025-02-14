@@ -1,4 +1,5 @@
 import 'package:efeone_mobile/controllers/task.dart';
+import 'package:efeone_mobile/utilities/helpers.dart';
 import 'package:efeone_mobile/view/Task%20screens/modal_task.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ class OpenTaskpage extends StatelessWidget {
       taskTypes: controller.openTasktype,
       taskParentTasks: controller.openTaskpartask,
       taskEndDates: controller.openTaskendDate,
+      taskcreation:controller.openTaskcreation ,
     );
   }
 }
@@ -40,6 +42,7 @@ class OverdueTaskpage extends StatelessWidget {
       taskTypes: controller.overduetype,
       taskParentTasks: controller.overduepartask,
       taskEndDates: controller.overdueEndDate,
+      taskcreation: controller.overdueTaskcreation,
     );
   }
 }
@@ -61,6 +64,7 @@ class PendingTaskpage extends StatelessWidget {
       taskTypes: controller.pendingtype,
       taskParentTasks: controller.pendingpartask,
       taskEndDates: controller.pendindTaskendDate,
+      taskcreation: controller.pendingTaskcreation,
     );
   }
 }
@@ -81,6 +85,7 @@ class WorkingTaskpage extends StatelessWidget {
       taskTypes: controller.workingtasktype,
       taskParentTasks: controller.workingtaskpartask,
       taskEndDates: controller.workingTaskebndDate,
+      taskcreation: controller.workingTaskcreation,
     );
   }
 }
@@ -101,6 +106,7 @@ class CompleteTaskpage extends StatelessWidget {
       taskTypes: controller.completeTasktype,
       taskParentTasks: controller.completeTaskpartask,
       taskEndDates: controller.completeTaskendDate,
+      taskcreation: controller.completeTaskcreation,
     );
   }
 }

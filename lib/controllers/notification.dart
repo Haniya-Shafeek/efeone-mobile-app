@@ -98,7 +98,6 @@ class Notificationcontroller extends ChangeNotifier {
         body: json.encode({'read': "1"}),
       );
       if (response.statusCode == 200) {
-        print("successly marked");
         notifyListeners();
       } else {
         throw Exception('Failed to mark notification as read');

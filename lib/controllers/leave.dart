@@ -69,6 +69,20 @@ class LeaveRequestProvider extends ChangeNotifier {
   List<Map<String, dynamic>> filteredLeaveApplications = [];
   String filterType = 'My Leaves';
 
+  bool isMyLeaveSelected = true;
+
+  void setLeaveFilter(bool isMyLeave) {
+    isMyLeaveSelected = isMyLeave;
+    notifyListeners();
+  }
+
+  bool loading = false;
+
+  void setLoading(bool value) {
+    loading = value;
+    notifyListeners();
+  }
+
   Future<void> loadSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     employeeIdController.text = prefs.getString('employeeid') ?? '';
@@ -78,18 +92,16 @@ class LeaveRequestProvider extends ChangeNotifier {
     _usr = prefs.getString('usr') ?? '';
     notifyListeners();
   }
- 
- void applyFilter() {
+
+  void applyFilter() {
     if (filterType == 'My Leaves') {
       // Show leaves owned by the logged-in user
-      filteredLeaveApplications = leaveApplications
-          .where((leave) => leave['owner'] == _usr)
-          .toList();
+      filteredLeaveApplications =
+          leaveApplications.where((leave) => leave['owner'] == _usr).toList();
     } else if (filterType == 'Team Leaves') {
       // Show leaves not owned by the logged-in user
-      filteredLeaveApplications = leaveApplications
-          .where((leave) => leave['owner'] != _usr)
-          .toList();
+      filteredLeaveApplications =
+          leaveApplications.where((leave) => leave['owner'] != _usr).toList();
     } else {
       // Show all leaves if no filter is applied
       filteredLeaveApplications = leaveApplications;
@@ -424,6 +436,8 @@ class LeaveRequestProvider extends ChangeNotifier {
         content: Text('Failed to submit leave'),
         backgroundColor: Colors.red,
       ));
+    } finally {
+      setLoading(false);
     }
   }
 

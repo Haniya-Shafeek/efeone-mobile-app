@@ -36,6 +36,11 @@ class Taskviewpage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final plainTextDescription = _removeHtmlTags(taskDes);
+    final List<String> descriptionPoints = plainTextDescription
+        .split('.')
+        .map((sentence) => sentence.trim())
+        .where((sentence) => sentence.isNotEmpty)
+        .toList();
 
     return Scaffold(
       appBar: const CustomAppBar(),
@@ -57,24 +62,21 @@ class Taskviewpage extends StatelessWidget {
               _buildTaskDetail('Task Type', type),
 
               const SizedBox(height: 12),
-              _buildTaskDetail(
-                  'Description',
-                  plainTextDescription.isEmpty
-                      ? "No description available"
-                      : plainTextDescription),
+              _buildTaskDescription('Description', descriptionPoints),
+
               const SizedBox(height: 12),
               _buildTaskDetail('End Date', formatDate(endDate)),
               const SizedBox(height: 12),
               ...[
                 const SizedBox(height: 12),
                 _buildTaskDetail(
-                    'Priority', priority ?? "No priority assigned"),
+                    'Priority', priority ),
               ],
               // const SizedBox(height: 12),
               ...[
                 const SizedBox(height: 12),
                 _buildTaskDetail(
-                    'Parent Task', parentTask ?? "No parent task assigned"),
+                    'Parent Task', parentTask ),
               ],
 
               const SizedBox(height: 12),
@@ -176,6 +178,68 @@ class Taskviewpage extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTaskDescription(String title, List<String> points) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (points.isEmpty)
+            const Text(
+              "No description available",
+              style: TextStyle(fontSize: 16, color: Colors.black87),
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: points
+                  .map(
+                    (point) => Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("• ", style: TextStyle(fontSize: 16)),
+                          Expanded(
+                            child: Text(
+                              point,
+                              style: const TextStyle(
+                                  fontSize: 16, color: Colors.black87),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+        ],
       ),
     );
   }

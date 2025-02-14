@@ -26,7 +26,7 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
   late TextEditingController endOfTheReviewController;
   late TextEditingController tomorrowplanController;
   bool isLoading = true;
-    bool isTextFieldEdited = false; 
+  bool isTextFieldEdited = false;
 
   Future<void> _saveTimesheet() async {
     final provider = Provider.of<TimesheetController>(context, listen: false);
@@ -35,6 +35,10 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
       "tomorrows_plan": tomorrowplanController.text,
     };
     await provider.updateTimesheet(widget.timesheetId!, data, context);
+    setState(() {
+      isTextFieldEdited = false;
+      provider.isPosted = false;
+    });
 
     await _fetchTimesheetDetails();
   }
@@ -88,7 +92,7 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
             child: Image.asset('assets/images/efeone Logo.png'),
           ),
           actions: [
-             (provider.isSaveButton || isTextFieldEdited)
+            (provider.isPosted || isTextFieldEdited)
                 ? CustomElevatedButton(
                     onPressed: () {
                       _saveTimesheet();
@@ -97,7 +101,57 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
                     label: "Save")
                 : CustomElevatedButton(
                     onPressed: () {
-                      provider.submitTimesheet(widget.timesheetId!, context);
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            backgroundColor: Colors.blueGrey[900],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            title: const custom_text(
+                              text: 'Confirm Submit',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                            content: const custom_text(
+                              text: 'Do you really want to submit this item?',
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  provider.submitTimesheet(
+                                      widget.timesheetId!, context);
+                                },
+                                child: const Text(
+                                  'Submit',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     },
                     label: "Submit"),
             IconButton(
@@ -106,62 +160,14 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
                 color: Colors.red,
               ),
               onPressed: () async {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      backgroundColor: Colors.blueGrey[900],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                      title: const custom_text(
-                        text: 'Confirm Submit',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                      content: const custom_text(
-                        text: 'Do you really want to submit this item?',
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
-                      actions: <Widget>[
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            bool? confirmDelete =
-                                await _showDeleteConfirmationDialog(context);
-                            if (confirmDelete!) {
-                              await provider.deleteTimesheet(
-                                  widget.timesheetId!, context);
-                              Navigator.pop(context);
-                            }
-                          },
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
+                // Show the delete confirmation dialog directly
+                bool? confirmDelete =
+                    await _showDeleteConfirmationDialog(context);
+                if (confirmDelete == true) {
+                  await provider.deleteTimesheet(widget.timesheetId!, context);
+                  provider.fetchTimesheetDetails();
+                  Navigator.of(context).pop();
+                }
               },
             ),
           ],
@@ -199,7 +205,6 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
                                 .subtract(const Duration(days: 30)),
                             lastDate: DateTime.now(),
                           );
-                          
 
                           if (selectedDate != null) {
                             final formattedDate =
@@ -291,7 +296,6 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
             color: Colors.blueGrey[900],
             fontWeight: FontWeight.bold,
           ),
-          
           border: const OutlineInputBorder(
             borderSide: BorderSide.none,
           ),
@@ -414,21 +418,36 @@ class _TimesheetEditViewScreenState extends State<TimesheetEditViewScreen> {
       barrierDismissible: false, // Prevent dismissing by tapping outside
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Timesheet'),
-          content:
-              const Text('Are you sure you want to delete this timesheet?'),
+          backgroundColor: const Color.fromRGBO(38, 50, 56, 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          title: const custom_text(
+            text: 'Delete Timesheet',
+            color: Colors.white,
+          ),
+          content: const custom_text(
+            text: 'Are you sure you want to delete this timesheet?',
+            color: Colors.white,
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(false); // User canceled
               },
-              child: const Text('Cancel'),
+              child: const custom_text(
+                text: 'Cancel',
+                color: Colors.white,
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(true); // User confirmed
               },
-              child: const Text('Delete'),
+              child: const custom_text(
+                text: 'Delete',
+                color: Colors.white,
+              ),
             ),
           ],
         );

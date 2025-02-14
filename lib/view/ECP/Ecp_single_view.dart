@@ -25,6 +25,7 @@ class _CheckinPermissionDetailScreenState
     final provider =
         Provider.of<CheckinPermissionProvider>(context, listen: false);
     provider.loadSharedPrefs();
+    print("owner   ${widget.ecpItem['owner']}");
 
     final String employee = widget.ecpItem['employee_name'] ?? 'N/A';
     final String name = widget.ecpItem['name'] ?? 'N/A';
@@ -37,7 +38,7 @@ class _CheckinPermissionDetailScreenState
     final status = widget.ecpItem['workflow_state'] ?? 'N/A';
 
     return Scaffold(
-      appBar: CustomAppBar(),
+      appBar: const CustomAppBar(),
       body: Padding(
         padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
         child: Container(

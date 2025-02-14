@@ -43,7 +43,6 @@ class Profilecontroller extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseBody = json.decode(response.body);
-        print(response.body);
         List<dynamic> data = responseBody['data'];
 
         if (data.isNotEmpty) {

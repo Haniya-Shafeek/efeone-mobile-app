@@ -1,4 +1,3 @@
-import 'package:efeone_mobile/view/search_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:efeone_mobile/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';

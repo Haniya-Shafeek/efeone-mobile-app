@@ -1,6 +1,7 @@
 import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 import 'package:efeone_mobile/controllers/leave.dart';
 
@@ -45,44 +46,62 @@ class LeaveApplicationScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: Consumer<LeaveRequestProvider>(
                       builder: (context, provider, child) {
-                        return Form(
-                          key: provider.formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                        return Stack(
+                          children: [
+                            Form(
+                              key: provider.formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  custom_text(
-                                    text: 'Apply for Leave',
-                                    fontSize: 23,
-                                    color: primaryColor,
+                                  const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      custom_text(
+                                        text: 'Apply for Leave',
+                                        fontSize: 20,
+                                        color: primaryColor,
+                                      ),
+                                    ],
                                   ),
+                                  _buildLabeledContainer(
+                                      'Employee ID', provider.empid.toString()),
+                                  _buildLabeledContainer('Employee Name',
+                                      provider.empname.toString()),
+                                  _buildDropdownField(provider, controller),
+                                  _buildDatePickers(provider, context),
+                                  _buildHalfDayCheckbox(provider),
+                                  if (provider.isHalfDay)
+                                    _buildHalfDayDateField(provider, context),
+                                  if (provider.dateValidationError != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        provider.dateValidationError!,
+                                        style:
+                                            const TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  _buildTextField(
+                                      'Reason', provider.reasonController),
+                                  const SizedBox(height: 25),
+                                  _buildSubmitButton(
+                                      provider, controller, context),
                                 ],
                               ),
-                              _buildLabeledContainer(
-                                  'Employee ID', provider.empid.toString()),
-                              _buildLabeledContainer(
-                                  'Employee Name', provider.empname.toString()),
-                              _buildDropdownField(provider, controller),
-                              _buildDatePickers(provider, context),
-                              _buildHalfDayCheckbox(provider),
-                              if (provider.isHalfDay)
-                                _buildHalfDayDateField(provider, context),
-                              if (provider.dateValidationError != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    provider.dateValidationError!,
-                                    style: const TextStyle(color: Colors.red),
+                            ),
+                            if (provider.isLoading)
+                              Positioned.fill(
+                                child: Container(
+                                  color: Colors.black.withOpacity(0.5),
+                                  child: const Center(
+                                    child: SpinKitThreeBounce(
+                                      color: Colors.white,
+                                      size: 50.0,
+                                    ),
                                   ),
                                 ),
-                              _buildTextField(
-                                  'Reason', provider.reasonController),
-                              const SizedBox(height: 25),
-                              _buildSubmitButton(provider, controller, context),
-                            ],
-                          ),
+                              ),
+                          ],
                         );
                       },
                     ),
@@ -130,26 +149,58 @@ class LeaveApplicationScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
+          DropdownButtonFormField<String>(
+            value: provider.leaveType,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color.fromARGB(255, 248, 245,
+                  245), // Background color for the dropdown field
+              border: OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(15.0), // Rounded border for the field
+                borderSide: const BorderSide(
+                  color: Color.fromARGB(255, 2, 51, 91), // Border color
+                  width: 1.5,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: const BorderSide(
+                  color: Colors.grey,
+                  width: 1.2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: const BorderSide(
+                  color: Colors.blue,
+                  width: 2.0,
+                ),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
-            child: DropdownButtonFormField<String>(
-              value: provider.leaveType,
-              decoration: const InputDecoration(border: InputBorder.none),
-              items: controller.leaveTypes.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: provider.setLeaveType,
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Please select Leave Type'
-                  : null,
-            ),
+            items: controller.leaveTypes.map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.black), // Styling for the text
+                ),
+              );
+            }).toList(),
+            onChanged: provider.setLeaveType,
+            validator: (value) => value == null || value.isEmpty
+                ? 'Please select Leave Type'
+                : null,
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.blueGrey),
+            dropdownColor: Colors.white,
+            isExpanded: true,
+            elevation: 5,
+            menuMaxHeight: 400,
+            borderRadius: BorderRadius.circular(15),
           ),
         ],
       ),

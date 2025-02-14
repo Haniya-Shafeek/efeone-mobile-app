@@ -1,5 +1,4 @@
 import 'package:efeone_mobile/controllers/timesheet.dart';
-import 'package:efeone_mobile/view/Time%20Sheet/timesheet_edit.dart';
 import 'package:efeone_mobile/widgets/cust_elevated_button.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:efeone_mobile/widgets/customdropdown.dart';
@@ -64,7 +63,7 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
 
     return WillPopScope(
       onWillPop: () async {
-        provider.fetchSingleTimesheetDetails(widget.timesheetId);
+        await provider.fetchSingleTimesheetDetails(widget.timesheetId);
         return true;
       },
       child: Scaffold(
@@ -335,15 +334,22 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Delete Time Log'),
-            content: const Text(
-                'Doyou want to delete this row? This action cannot be undone.'),
+            backgroundColor: Colors.blueGrey[900],
+            title: const custom_text(
+              text: 'Delete Time Log',
+              color: Colors.white,
+            ),
+            content: const custom_text(
+              text:
+                  'Do you want to delete this row? This action cannot be undone.',
+              color: Colors.white,
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const custom_text(
                   text: "Cancel",
-                  color: Colors.black,
+                  color: Colors.white54,
                 ),
               ),
               TextButton(
@@ -351,11 +357,13 @@ class _TsEditviewState extends State<TimesheetRowupdateview> {
                   // Perform deletion and close dialog
                   await provider.deleteTimesheetRow(
                       widget.timesheetId, _name!, context);
+                  provider.fetchSingleTimesheetDetails(widget.timesheetId);
                   Navigator.of(context).pop(); // Close the dialog
+                  Navigator.of(context).pop();
                 },
                 child: const custom_text(
                   text: "Delete",
-                  color: Colors.red,
+                  color: Colors.redAccent,
                 ),
               ),
             ],

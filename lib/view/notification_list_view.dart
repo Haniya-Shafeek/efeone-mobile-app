@@ -17,10 +17,10 @@ class NotificationScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => Notificationcontroller()..fetchNotifications(),
       child: WillPopScope(
-        onWillPop: () async{
-           final controller = context.read<Notificationcontroller>();
+        onWillPop: () async {
+          final controller = context.read<Notificationcontroller>();
           controller.fetchNotifications(); // Refresh notifications
-          return true; 
+          return true;
         },
         child: Scaffold(
           appBar: AppBar(
@@ -29,31 +29,29 @@ class NotificationScreen extends StatelessWidget {
               child: Image.asset('assets/images/efeone Logo.png'),
             ),
             actions: [
-                IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SearchScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(
-                Icons.search,
-                color: Colors.blue,
-                size: 28,
-              )),
-          const SizedBox(
-            width: 10,
-          )
+              IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SearchScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.search,
+                    color: Colors.blue,
+                    size: 28,
+                  )),
+              const SizedBox(
+                width: 10,
+              )
             ],
           ),
           body: Consumer<Notificationcontroller>(
             builder: (context, controller, child) {
               if (controller.notname.isEmpty) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return _buildLoadingSkeleton(screenWidth, screenHeight);
               } else {
                 return ListView.builder(
                   padding:
@@ -66,9 +64,10 @@ class NotificationScreen extends StatelessWidget {
                     final String isRead = controller.notread[index];
                     return Padding(
                       padding: EdgeInsets.symmetric(
-                          vertical:
-                              screenHeight * 0.01), // Responsive vertical padding
+                          vertical: screenHeight *
+                              0.01), // Responsive vertical padding
                       child: Card(
+                        surfaceTintColor: Colors.white,
                         elevation: 3,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
@@ -79,22 +78,27 @@ class NotificationScreen extends StatelessWidget {
                         child: ListTile(
                           contentPadding: EdgeInsets.all(
                               screenWidth * 0.04), // Responsive padding
-                          onTap: () {
-                            controller
-                                .notificationRead(controller.notname[index]);
-                            controller.fetchNotifications();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => NotificationView(
-                                  type: controller.nottype[index],
-                                  subject: controller.notsub[index],
-                                  name: controller.taskname[index],
-                                  date: controller.notdate[index],
-                                  assaigned: controller.notassaign[index],
+                          onTap: () async {
+                            await controller.notificationRead(controller
+                                .notname[index]); // Mark as read first
+                            await controller
+                                .fetchNotifications(); // Fetch updated notifications
+
+                            // Navigate after ensuring the state is updated
+                            if (context.mounted) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NotificationView(
+                                    type: controller.nottype[index],
+                                    subject: controller.notsub[index],
+                                    name: controller.taskname[index],
+                                    date: controller.notdate[index],
+                                    assaigned: controller.notassaign[index],
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           },
                           title: Text(
                             controller.taskname[index],
@@ -119,7 +123,8 @@ class NotificationScreen extends StatelessWidget {
                           ),
                           trailing: isRead == '0'
                               ? Container(
-                                  width: screenWidth * 0.025, // Responsive width
+                                  width:
+                                      screenWidth * 0.025, // Responsive width
                                   height:
                                       screenWidth * 0.025, // Responsive height
                                   decoration: const BoxDecoration(
@@ -138,6 +143,47 @@ class NotificationScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  // Skeleton UI with shadow effect
+  Widget _buildLoadingSkeleton(double screenWidth, double screenHeight) {
+    return ListView.builder(
+      padding: EdgeInsets.all(screenWidth * 0.03),
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+          child: Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(screenWidth * 0.04),
+            ),
+            child: ListTile(
+              contentPadding: EdgeInsets.all(screenWidth * 0.04),
+              title: Container(
+                width: screenWidth * 0.6,
+                height: screenHeight * 0.02,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              subtitle: Padding(
+                padding: EdgeInsets.only(top: screenHeight * 0.01),
+                child: Container(
+                  width: screenWidth * 0.8,
+                  height: screenHeight * 0.015,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

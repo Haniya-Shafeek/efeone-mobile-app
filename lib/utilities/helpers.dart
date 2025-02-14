@@ -27,6 +27,16 @@ String formatCheckinTime(String time) {
 String formatDateTime(DateTime dateTime) {
   return DateFormat('yyyy-MM-dd HH:mm:ss:SSS').format(dateTime);
 }
+String formatDatefromTime(String? time) {
+    if (time == null) return 'N/A';
+    try {
+      DateTime parsedTime = DateTime.parse(time);
+      // Format the time in 12-hour format with AM/PM
+      return DateFormat('MMM d,yyyy').format(parsedTime);
+    } catch (e) {
+      return 'Invalid Time';
+    }
+  }
 
 String formatFromTime(String fromTime) {
   try {

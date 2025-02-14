@@ -1,15 +1,31 @@
 import 'package:efeone_mobile/controllers/leave.dart';
 import 'package:efeone_mobile/utilities/constants.dart';
+import 'package:efeone_mobile/utilities/helpers.dart';
 import 'package:efeone_mobile/view/leave%20application/leaveEdit_view.dart';
 import 'package:efeone_mobile/view/leave%20application/leave_application_view.dart';
 import 'package:efeone_mobile/view/leave%20application/leave_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
 import 'package:efeone_mobile/widgets/custom_appbar.dart';
+import 'package:efeone_mobile/widgets/leave_balance_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class LeaveListview extends StatelessWidget {
+class LeaveListview extends StatefulWidget {
   const LeaveListview({super.key});
+
+  @override
+  State<LeaveListview> createState() => _LeaveListviewState();
+}
+
+class _LeaveListviewState extends State<LeaveListview> {
+  String _selectedFilter = "My Leave"; // Default filter
+  final List<String> _filters = ["My Leave", "Team Leave"];
+
+  void _onFilterChanged(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +115,7 @@ class LeaveListview extends StatelessWidget {
                 ),
               );
             } else {
+              final currentUser = controller.usr?.trim().toLowerCase() ?? '';
               List<Map<String, String>> leaveDetails = [
                 {
                   'leaveType': 'Casual Leaves',
@@ -163,7 +180,7 @@ class LeaveListview extends StatelessWidget {
                   case 'Rejected':
                     return Colors.red;
                   default:
-                    return Colors.black;
+                    return const Color.fromARGB(255, 103, 94, 94);
                 }
               }
 
@@ -174,91 +191,127 @@ class LeaveListview extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     custom_text(
-                      text: 'Leave Summary',
+                      text: 'Leave Balance',
                       fontSize: MediaQuery.of(context).size.width * 0.045,
-                      color: primaryColor,
+                      color: const Color.fromARGB(255, 2, 51, 91),
                       fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 10),
-                    ...groupedLeaveDetails.entries.map((entry) {
-                      final leaveType = entry.key;
-                      final details = entry.value;
-
-                      return ExpansionTile(
-                        collapsedIconColor: Colors.blue,
-                        iconColor: Colors.blue,
-                        title: Text(
-                          leaveType,
-                          style: TextStyle(
-                            fontSize: MediaQuery.of(context).size.width * 0.04,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blueGrey,
-                          ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        HalfDoughnutChart(
+                          totalLeaves: (controller.totalLeaves ?? 0).toDouble(),
+                          leavesRemaining:
+                              controller.remainingLeaves.toDouble(),
+                          baseColor:
+                              Colors.pinkAccent, // Rose color for Casual Leave
+                          title: 'Casual Leave Balance',
                         ),
-                        children: [
-                          ...details.map((detail) {
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(detail['title']!),
-                                  Text(detail['value']!,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blueAccent)),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      );
-                    }),
+                        const SizedBox(width: 20),
+                        HalfDoughnutChart(
+                          totalLeaves:
+                              (controller.privilegeLeaveTotal ?? 0).toDouble(),
+                          leavesRemaining:
+                              controller.privilegeLeaveRemaining.toDouble(),
+                          baseColor:
+                              Colors.purple, // Purple color for Privilege Leave
+                          title: 'Privilege Leave Balance',
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 16),
                     custom_text(
                       text: 'Leave Applications',
                       fontSize: MediaQuery.of(context).size.width * 0.045,
-                      color: primaryColor,
+                      color: const Color.fromARGB(255, 2, 51, 91),
                       fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
+
+                    // Filter Selection Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6.0, vertical: 8.0),
+                      child: Row(
+                        children: _filters.map((filter) {
+                          final isSelected = filter == _selectedFilter;
+                          return GestureDetector(
+                            onTap: () => _onFilterChanged(filter),
+                            child: Container(
+                              width: 120,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              margin: const EdgeInsets.only(right: 10),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color.fromARGB(255, 2, 51, 91)
+                                    : Colors.grey[300],
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: custom_text(
+                                  text: filter,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : const Color.fromARGB(255, 2, 51, 91),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     Column(
-                      children: leaveApplications.map((application) {
+                      children: leaveApplications.where((application) {
+                        final owner =
+                            application['owner']?.trim().toLowerCase() ?? '';
+
+                        if (_selectedFilter == "My Leave") {
+                          return owner == currentUser;
+                        } else if (_selectedFilter == "Team Leave") {
+                          return owner != currentUser && owner.isNotEmpty;
+                        }
+                        return false;
+                      }).map((application) {
                         return GestureDetector(
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => LeaveView(
-                                  employee: application["employee_name"] ?? "",
-                                  reason:
-                                      application["description"] ?? 'No Reason',
-                                  fromDate:
-                                      application["from_date"] ?? 'No Fromdate',
-                                  toDate: application["to_date"] ?? 'No Todte',
-                                  isHalfDay:
-                                      application["half_day"] ?? "No Halfday",
-                                  halfDayDate:
-                                      application["half_day_date"] ?? "",
-                                  leaveType: application["leave_type"] ?? "",
+                                builder: (context) => LeaveEditView(
+                                  reason: application['description'] ?? '',
+                                  owner: application['owner']??'',
                                   status: application['status'],
+                                  approver: application['leave_approver'],
+                                  fromDate: application['from_date'] ?? '',
+                                  isHalfDay: application['half_day'] ?? '',
+                                  halfDayDate:
+                                      application['half_day_date'] ?? '',
+                                  leaveType: application['leave_type'] ?? '',
+                                  toDate: application['to_date'] ?? '',
                                   totalLeaveDays:
-                                      application["total_leave_days"],
-                                  id: application["name"] ?? "",
-                                  approver: application["leave_approver"] ?? '',
+                                      application['total_leave_days'] ?? '',
+                                  id: application['name'] ?? '',
                                 ),
                               ),
                             );
                           },
                           child: Card(
                             color: Colors.white,
+                            surfaceTintColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: BorderSide(
-                                  color: Colors.grey.shade300, width: 1),
                             ),
-                            elevation: 5,
+                            elevation: 3,
                             margin: EdgeInsets.only(
                                 bottom:
                                     MediaQuery.of(context).size.height * 0.02),
@@ -284,7 +337,9 @@ class LeaveListview extends StatelessWidget {
                                                   .width *
                                               0.025,
                                           color: Colors.black,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w600,
+                                          overflow: TextOverflow
+                                              .ellipsis, // Add this to prevent overflow
                                         ),
                                         const SizedBox(height: 4),
                                         custom_text(
@@ -293,9 +348,11 @@ class LeaveListview extends StatelessWidget {
                                           fontSize: MediaQuery.of(context)
                                                   .size
                                                   .width *
-                                              0.025,
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold,
+                                              0.030,
+                                          color: const Color.fromARGB(
+                                              255, 87, 86, 86),
+                                          overflow: TextOverflow
+                                              .ellipsis, // Add this to prevent overflow
                                         ),
                                       ],
                                     ),
@@ -303,12 +360,14 @@ class LeaveListview extends StatelessWidget {
                                   Expanded(
                                     flex: 2,
                                     child: custom_text(
-                                      text: '${application['from_date']}',
+                                      text:
+                                          formatDate(application['from_date']),
                                       fontSize:
                                           MediaQuery.of(context).size.width *
-                                              0.03,
-                                      color: Colors.grey[700],
-                                      fontWeight: FontWeight.bold,
+                                              0.04,
+                                      color: Colors.grey,
+                                      overflow: TextOverflow
+                                          .ellipsis, // Add this to prevent overflow
                                     ),
                                   ),
                                   Expanded(
@@ -331,50 +390,12 @@ class LeaveListview extends StatelessWidget {
                                           fontSize: 12,
                                         ),
                                         textAlign: TextAlign.center,
+                                        overflow: TextOverflow
+                                            .ellipsis, // Add this to prevent overflow
                                       ),
                                     ),
                                   ),
-                                  if (application['status'] == 'Open' &&
-                                      application['owner'] == controller.usr)
-                                    Expanded(
-                                      flex: 1,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        color: Colors.blueGrey[900],
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  LeaveEditView(
-                                                reason: application[
-                                                        'description'] ??
-                                                    '',
-                                                fromDate:
-                                                    application['from_date'] ??
-                                                        '',
-                                                isHalfDay:
-                                                    application['half_day'] ??
-                                                        '',
-                                                halfDayDate: application[
-                                                        'half_day_date'] ??
-                                                    '',
-                                                leaveType:
-                                                    application['leave_type'] ??
-                                                        '',
-                                                toDate:
-                                                    application['to_date'] ??
-                                                        '',
-                                                totalLeaveDays: application[
-                                                        'total_leave_days'] ??
-                                                    '',
-                                                id: application['name'] ?? '',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
+                                 
                                 ],
                               ),
                             ),

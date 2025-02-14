@@ -1,3 +1,4 @@
+import 'package:efeone_mobile/utilities/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:efeone_mobile/view/Task%20screens/task_single_view.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
@@ -15,21 +16,22 @@ class TaskPage extends StatelessWidget {
   final List<String> taskTypes;
   final List<String> taskParentTasks;
   final List<String> taskEndDates;
+  final List<String> taskcreation;
 
-  const TaskPage({
-    super.key,
-    required this.title,
-    required this.taskNames,
-    required this.taskStatuses,
-    required this.taskSubjects,
-    required this.taskDescriptions,
-    required this.taskProjects,
-    required this.taskOwners,
-    required this.taskPriorities,
-    required this.taskTypes,
-    required this.taskParentTasks,
-    required this.taskEndDates,
-  });
+  const TaskPage(
+      {super.key,
+      required this.title,
+      required this.taskNames,
+      required this.taskStatuses,
+      required this.taskSubjects,
+      required this.taskDescriptions,
+      required this.taskProjects,
+      required this.taskOwners,
+      required this.taskPriorities,
+      required this.taskTypes,
+      required this.taskParentTasks,
+      required this.taskEndDates,
+      required this.taskcreation});
 
   @override
   Widget build(BuildContext context) {
@@ -45,62 +47,6 @@ class TaskPage extends StatelessWidget {
                 itemBuilder: (context, index) {
                   return GestureDetector(
                     onTap: () {
-                      // if (taskNames.isNotEmpty &&
-                      //     taskProjects.isNotEmpty &&
-                      //     taskParentTasks.isNotEmpty &&
-                      //     taskPriorities.isNotEmpty &&
-                      //     taskTypes.isNotEmpty &&
-                      //     taskTypes.isNotEmpty &&
-                      //     taskDescriptions.isNotEmpty &&
-                      //     taskStatuses.isNotEmpty &&
-                      //     taskEndDates.isNotEmpty &&
-                      //     taskOwners.isNotEmpty) {
-                      //   // Navigate to Taskviewpage
-                      //   Navigator.push(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //       builder: (context) => Taskviewpage(
-                      //         project: taskProjects[index],
-                      //         parentTask: index < taskParentTasks.length
-                      //             ? taskParentTasks[index]
-                      //             : "null",
-                      //         priority:index< taskPriorities.length?taskPriorities[index]:"null",
-                      //         type: taskTypes[index],
-                      //         taskName: taskNames[index],
-                      //         taskSubject: taskSubjects[index],
-                      //         taskDes: taskDescriptions[index],
-                      //         taskSts: taskStatuses[index],
-                      //         endDate: taskEndDates[index],
-                      //         owner: taskOwners[index],
-                      //       ),
-                      //     ),
-                      //   );
-                      // } else {
-                      //   if (taskNames.isEmpty) print("openTaskNames is empty!");
-                      //   if (taskProjects.isEmpty) {
-                      //     print("openTaskproject is empty!");
-                      //   }
-                      //   if (taskParentTasks.isEmpty) {
-                      //     print("openTaskpartask is empty!");
-                      //   }
-                      //   if (taskPriorities.isEmpty) {
-                      //     print("openTaskpriority is empty!");
-                      //   }
-                      //   if (taskTypes.isEmpty) print("openTasktype is empty!");
-                      //   if (taskTypes.isEmpty) print("openTaskSub is empty!");
-                      //   if (taskDescriptions.isEmpty) {
-                      //     print("openTaskdes is empty!");
-                      //   }
-                      //   if (taskStatuses.isEmpty) {
-                      //     print("openTaskSts is empty!");
-                      //   }
-                      //   if (taskEndDates.isEmpty) {
-                      //     print("openTaskendDate is empty!");
-                      //   }
-                      //   if (taskOwners.isEmpty) {
-                      //     print("openTaskowner is empty!");
-                      //   }
-                      // }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -128,12 +74,12 @@ class TaskPage extends StatelessWidget {
                         top: MediaQuery.of(context).size.height * 0.02,
                       ),
                       child: _buildTaskRow(
-                        context: context,
-                        subject: taskSubjects[index],
-                        project: taskProjects[index],
-                        title: taskNames[index],
-                        status: taskStatuses[index],
-                      ),
+                          context: context,
+                          subject: taskSubjects[index],
+                          project: taskProjects[index],
+                          title: taskNames[index],
+                          status: taskStatuses[index],
+                          creation: taskcreation[index]),
                     ),
                   );
                 },
@@ -169,10 +115,12 @@ class TaskPage extends StatelessWidget {
     required String subject,
     required String status,
     required String project,
+    required String creation,
     required BuildContext context,
   }) {
     return Card(
       color: Colors.white,
+      surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
       ),
@@ -180,62 +128,79 @@ class TaskPage extends StatelessWidget {
       margin: EdgeInsets.only(
         bottom: MediaQuery.of(context).size.height * 0.02,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+      child: Container(
+        height: 90,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           children: [
-            // Title and Subject
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   custom_text(
                     text: title,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: primaryColor,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 5), // Consistent spacing
+                  const SizedBox(height: 6),
                   custom_text(
-                    text: "Sub : $subject",
+                    text: "Sub: $subject",
                     fontSize: 12,
                     fontWeight: FontWeight.normal,
-                    color: primaryColor,
+                    color: Colors.grey.shade700,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(
+                    height: 5,
+                  ),
+                  custom_text(
+                    text: "Date: ${formatDatefromTime(creation)}",
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.blue,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            // Spacer between sections
-            const Spacer(flex: 1),
-
-            // Project
-            Expanded(
-              flex: 2,
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 90,
               child: custom_text(
                 text: project,
                 fontWeight: FontWeight.normal,
                 color: primaryColor,
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Spacer between sections
-            const Spacer(flex: 1),
-
-            // Status
-            Expanded(
-              flex: 2,
+            const SizedBox(width: 16),
+            // Adjusted height for better visibility
+            SizedBox(
+              height: 24, // Slightly reduced height
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _getStatusColor(status).withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6), // Balanced radius
                 ),
                 child: Center(
                   child: custom_text(
                     text: status,
+                    fontSize: 10, // Adjusted font size
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),

@@ -81,7 +81,7 @@ class _TimesheetRowBottomSheetState extends State<TimesheetRowBottomSheet> {
                           _confirmDelete(provider);
                         },
                         icon: const Icon(
-                          Icons.delete,
+                          Icons.delete_outlined,
                           color: Colors.red,
                         ))
                   ],

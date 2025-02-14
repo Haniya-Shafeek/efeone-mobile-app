@@ -21,8 +21,8 @@ class NotificationStack extends StatelessWidget {
             );
           },
           child: const Icon(
-            Icons.notifications,
-            color: Colors.blue,
+            Icons.notifications_outlined,
+            color: Color.fromARGB(255, 3, 98, 176),
             size: 28,
           ),
         ),

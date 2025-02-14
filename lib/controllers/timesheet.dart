@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'package:efeone_mobile/view/Time%20Sheet/timesheet_edit.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheet_list_view.dart';
 import 'package:efeone_mobile/view/Time%20Sheet/timesheetRowAdd_view.dart';
-import 'package:efeone_mobile/view/Time%20Sheet/timesheet_row_edit.dart';
 import 'package:efeone_mobile/widgets/cust_snackbar.dart';
 import 'package:http/http.dart' as http;
 import 'package:efeone_mobile/utilities/config.dart';
@@ -27,6 +25,7 @@ class TimesheetController extends ChangeNotifier {
   String? selectedProject;
   bool isCompleted = false;
   bool isDataFetched = false;
+  bool isPosted = false;
 
   String? get empid => _empid;
   String? get usr => _usr;
@@ -55,6 +54,23 @@ class TimesheetController extends ChangeNotifier {
     employeeNameController.text = prefs.getString('fullName') ?? '';
     _empname = prefs.getString('fullName') ?? '';
     _usr = prefs.getString('usr');
+    notifyListeners();
+  }
+
+  bool isLoading = false;
+
+  void setLoading(bool value) {
+    isLoading = value;
+    notifyListeners();
+  }
+
+  void isposted() {
+    isPosted = true;
+    notifyListeners();
+  }
+
+  void resetSaved() {
+    isPosted = false;
     notifyListeners();
   }
 
@@ -167,6 +183,7 @@ class TimesheetController extends ChangeNotifier {
       String? eodReview,
       String? tmrwplan,
       required BuildContext context}) async {
+         setLoading(true); 
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("cookie");
@@ -195,11 +212,14 @@ class TimesheetController extends ChangeNotifier {
         // Success handling
         final responseData = jsonDecode(response.body);
         final timesheetName = responseData['data']['name'];
+        isPosted = true;
+        notifyListeners();
         Provider.of<TimesheetController>(context, listen: false)
             .setTimesheetName(timesheetName);
+
         CustomSnackbar.showSnackbar(
             context: context,
-            message: "Timesheet Posted Successfully",
+            message: "Timesheet Saved Successfully",
             bgColor: Colors.green);
 
         print('Timesheet created successfully: ${response.body}');
@@ -213,6 +233,8 @@ class TimesheetController extends ChangeNotifier {
         content: Text('Failed to save timesheet'),
         backgroundColor: Colors.red,
       ));
+    }finally{
+      setLoading(false);
     }
   }
 
@@ -244,12 +266,11 @@ class TimesheetController extends ChangeNotifier {
             context: context,
             message: "Timesheet Submitted Successfully",
             bgColor: Colors.green);
-
-        Navigator.push(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (context) => const TimesheetListviewScreen(),
-          ),
+              builder: (context) => const TimesheetListviewScreen()),
+          (route) => route.isFirst, // Keeps only the first route (HomeScreen)
         );
       } else {
         // Error handling
@@ -257,13 +278,13 @@ class TimesheetController extends ChangeNotifier {
       }
     } catch (error) {
       print('An error occurred: $error');
-      print('An error occurred: $error');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Failed to submit timesheet'),
         backgroundColor: Colors.red,
       ));
     }
   }
+  
 
   //Method To update the timesheet
   Future<bool> updateTimesheet(String timesheetId, Map<String, dynamic> data,

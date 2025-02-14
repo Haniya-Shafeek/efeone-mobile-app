@@ -42,7 +42,8 @@ class HomepageController extends ChangeNotifier {
   }
 
   // Toggle check-in status
-  Future<void> toggleCheckInStatus(double latitude, double logiude,BuildContext context) async {
+  Future<void> toggleCheckInStatus(
+      double latitude, double logiude, BuildContext context) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _isCheckedIn = !_isCheckedIn;
@@ -62,7 +63,7 @@ class HomepageController extends ChangeNotifier {
           DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       String status = _isCheckedIn ? 'IN' : 'OUT';
 
-      await postStatus(status, currentTime, latitude, logiude,context);
+      await postStatus(status, currentTime, latitude, logiude, context);
     } catch (e) {
       print('Error toggling check-in status: $e');
     }

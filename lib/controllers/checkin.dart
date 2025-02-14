@@ -55,6 +55,13 @@ class CheckinPermissionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  bool loading = false;
+
+  void setLoading(bool value) {
+    loading = value;
+    notifyListeners();
+  }
+
   //Method to select date
   void selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -167,6 +174,8 @@ class CheckinPermissionProvider with ChangeNotifier {
       }
     } catch (e) {
       print('An error occurred: $e');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -467,6 +476,7 @@ class CheckinPermissionProvider with ChangeNotifier {
             message: "Checkin deleted Successfully",
             bgColor: Colors.red);
         print('Record deleted successfully');
+        await fetchCheckin();
         notifyListeners();
       } else {
         print('Failed to delete record: ${response.statusCode}');

@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:efeone_mobile/controllers/chat.dart';
-import 'package:efeone_mobile/utilities/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:efeone_mobile/utilities/constants.dart';
+import 'package:efeone_mobile/controllers/chat.dart';
 
 class GroupChatScreen extends StatefulWidget {
   const GroupChatScreen({super.key});
@@ -308,8 +308,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         contentPadding: const EdgeInsets.all(10),
                         hintText: 'Type a message...',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.blue)),
                       ),
                     ),
                   ),
@@ -333,6 +333,6 @@ Widget customText(
     Color color = Colors.black}) {
   return Text(
     text,
-    style: TextStyle(fontWeight: fontWeight, color: color),
+    style: TextStyle(fontWeight: fontWeight, color: color, fontSize: 12),
   );
 }

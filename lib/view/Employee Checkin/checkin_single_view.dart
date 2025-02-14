@@ -109,6 +109,16 @@ class _CheckinDetailsScreenState extends State<CheckinDetailsScreen> {
                         "Time",
                         formatCheckinTime(widget.checkinData['time']),
                       ),
+                      const SizedBox(height: 12),
+                      _buildRow(
+                        "Longitude",
+                        longitude.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildRow(
+                        "Latitude",
+                        latitude.toString(),
+                      ),
                       const SizedBox(height: 16),
                       if (widget.checkinData['owner'] == provider.logmail)
                         SizedBox(
@@ -168,7 +178,8 @@ class _CheckinDetailsScreenState extends State<CheckinDetailsScreen> {
                                           await provider.deleteCheckin(
                                               checkinid, context);
                                           Navigator.pop(context);
-                                          Navigator.pop(context);
+                                          provider.fetchCheckin();
+                                          Navigator.of(context).pop();
                                         },
                                         child: const Text(
                                           'Delete',
@@ -209,7 +220,7 @@ class _CheckinDetailsScreenState extends State<CheckinDetailsScreen> {
       {Color textColor = Colors.black,
       FontWeight fontWeight = FontWeight.normal}) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
@@ -219,12 +230,18 @@ class _CheckinDetailsScreenState extends State<CheckinDetailsScreen> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            color: textColor,
-            fontWeight: fontWeight,
+        const SizedBox(width: 8), // Add spacing
+        Expanded(
+          // Prevent overflow
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              color: textColor,
+              fontWeight: fontWeight,
+            ),
+            overflow: TextOverflow.ellipsis, // Trim long text
+            maxLines: 1, // Show only one line
           ),
         ),
       ],

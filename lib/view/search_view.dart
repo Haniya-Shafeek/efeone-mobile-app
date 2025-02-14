@@ -41,7 +41,7 @@ class _SearchScreenState extends State<SearchScreen> {
     {
       'name': 'Tasks',
       'icon': Icons.task,
-      'route': Tasktabbar(
+      'route': const Tasktabbar(
         initialTabIndex: 0,
       )
     },
@@ -92,7 +92,7 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.all(16),
                 hintText: 'Search for services...',
-                hintStyle: const TextStyle(color: Colors.black),
+                hintStyle: const TextStyle(color: Colors.blueGrey),
                 prefixIcon: const Icon(Icons.search, color: Colors.blueGrey),
                 filled: true,
                 fillColor: Colors.grey[200],

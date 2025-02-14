@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
 import 'package:efeone_mobile/controllers/checkin.dart';
 import 'package:efeone_mobile/widgets/cust_text.dart';
@@ -40,39 +41,55 @@ class _CheckinPermissionScreenState extends State<CheckinPermissionScreen> {
               onTap: () => FocusScope.of(context).unfocus(),
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                child: Form(
-                  key: provider.formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
+                  children: [
+                    Form(
+                      key: provider.formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          custom_text(
-                            text: 'Apply for ECP',
-                            fontSize: 23,
-                            color: primaryColor,
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              custom_text(
+                                text: 'Apply for ECP',
+                                fontSize: 20,
+                                color: primaryColor,
+                              ),
+                            ],
                           ),
+                          SizedBox(height: screenHeight * 0.01),
+                          _buildLabeledContainer(
+                              'Employee ID', provider.empid.toString()),
+                          _buildLabeledContainer(
+                              'Employee Name', provider.empname.toString()),
+                          SizedBox(height: screenHeight * 0.02),
+                          _buildDateSection(screenWidth, provider),
+                          SizedBox(height: screenHeight * 0.02),
+                          _buildLogTypeSection(screenWidth, provider),
+                          SizedBox(height: screenHeight * 0.02),
+                          if (provider.selectedLogType != null)
+                            _buildTimeSection(screenWidth, provider),
+                          SizedBox(height: screenHeight * 0.01),
+                          _buildReasonSection(screenWidth, provider),
+                          const SizedBox(height: 10),
+                          _buildSubmitButton(provider),
                         ],
                       ),
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildLabeledContainer(
-                          'Employee ID', provider.empid.toString()),
-                      _buildLabeledContainer(
-                          'Employee Name', provider.empname.toString()),
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildDateSection(screenWidth, provider),
-                      SizedBox(height: screenHeight * 0.02),
-                      _buildLogTypeSection(screenWidth, provider),
-                      SizedBox(height: screenHeight * 0.02),
-                      if (provider.selectedLogType != null)
-                        _buildTimeSection(screenWidth, provider),
-                      SizedBox(height: screenHeight * 0.01),
-                      _buildReasonSection(screenWidth, provider),
-                      const SizedBox(height: 10),
-                      _buildSubmitButton(provider),
-                    ],
-                  ),
+                    ),
+                    if (provider.loading)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withOpacity(0.5),
+                          child: const Center(
+                            child: SpinKitThreeBounce(
+                              color: Colors.white,
+                              size: 50.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             );
@@ -119,7 +136,7 @@ class _CheckinPermissionScreenState extends State<CheckinPermissionScreen> {
           onTap: () => provider.selectDate(context),
           child: AbsorbPointer(
             child: Container(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(5.0),
               width: double.infinity,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
@@ -166,34 +183,62 @@ class _CheckinPermissionScreenState extends State<CheckinPermissionScreen> {
           fontSize: screenWidth * 0.035,
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(5.0),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: provider.selectedLogType,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
+        DropdownButtonFormField<String>(
+          value: provider.selectedLogType,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color.fromARGB(
+                255, 248, 245, 245), // Background color for the dropdown field
+            border: OutlineInputBorder(
+              borderRadius:
+                  BorderRadius.circular(15.0), // Rounded border for the field
+              borderSide: const BorderSide(
+                color: Colors.blueGrey, // Border color
+                width: 1.5,
+              ),
             ),
-            items: <String>['IN', 'OUT'].map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (value) {
-              provider.selectLogType(value!);
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return "Please select log type";
-              }
-              return null;
-            },
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+              borderSide: const BorderSide(
+                color: Colors.grey,
+                width: 1.2,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+              borderSide: const BorderSide(
+                color: Colors.blue,
+                width: 2.0,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 8), // Padding inside the field
           ),
+          items: <String>['IN', 'OUT'].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(
+                value,
+                style: const TextStyle(fontSize: 16, color: Colors.black),
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            provider.selectLogType(value!);
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return "Please select log type";
+            }
+            return null;
+          },
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.blueGrey),
+          dropdownColor: Colors.white,
+          isDense: true,
+          isExpanded: true,
+          elevation: 5,
+          menuMaxHeight: 200,
+          borderRadius: BorderRadius.circular(15),
         ),
       ],
     );
@@ -218,7 +263,7 @@ class _CheckinPermissionScreenState extends State<CheckinPermissionScreen> {
               : provider.selectLeavingTime(context),
           child: AbsorbPointer(
             child: Container(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(5.0),
               width: double.infinity,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
